@@ -7,88 +7,214 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Serve the public folder (our HTML/CSS/JS files)
 app.use(express.static(path.join(__dirname, "public")));
 
-// Keep track of waiting players and active battles
 let waitingPlayer = null;
-const battles = {}; // battleId -> { player1, player2 }
+const battles = {};
+
+// ── Formation timer: 75 seconds ──
+const FORMATION_TIMER = 75;
 
 io.on("connection", (socket) => {
-  console.log(`Player connected: ${socket.id}`);
+  console.log(`Connected: ${socket.id}`);
 
-  // When a player wants to find a match
-  socket.on("find_match", (playerName) => {
+  // ── Matchmaking ──
+  socket.on("find_match", ({ playerName, team }) => {
     socket.playerName = playerName;
-    console.log(`${playerName} is looking for a match...`);
+    socket.team = team; // full team of 5 vivosaurs from client
+
+    console.log(`${playerName} looking for match...`);
 
     if (waitingPlayer && waitingPlayer.id !== socket.id) {
-      // We have two players — start a battle!
       const battleId = `battle_${Date.now()}`;
-      const player1 = waitingPlayer;
-      const player2 = socket;
+      const p1 = waitingPlayer;
+      const p2 = socket;
 
-      battles[battleId] = { player1, player2 };
-      player1.battleId = battleId;
-      player2.battleId = battleId;
+      battles[battleId] = {
+        p1, p2,
+        p1Ready: false, p2Ready: false,
+        p1Formation: null, p2Formation: null,
+        timerStart: Date.now(),
+        battleStarted: false,
+        turnOf: "p1", // p1 goes first
+      };
 
-      // Tell both players the match is found
-      player1.emit("match_found", {
+      p1.battleId = battleId;
+      p2.battleId = battleId;
+      p1.role = "p1";
+      p2.role = "p2";
+
+      // Tell both to go to formation screen
+      p1.emit("enter_formation", {
         battleId,
-        opponent: player2.playerName,
+        opponent: p2.playerName,
+        opponentTeam: p2.team,
+        timerSeconds: FORMATION_TIMER,
         yourTurn: true,
       });
-      player2.emit("match_found", {
+      p2.emit("enter_formation", {
         battleId,
-        opponent: player1.playerName,
+        opponent: p1.playerName,
+        opponentTeam: p1.team,
+        timerSeconds: FORMATION_TIMER,
         yourTurn: false,
       });
 
-      console.log(`Battle started: ${player1.playerName} vs ${player2.playerName}`);
+      console.log(`Formation phase: ${p1.playerName} vs ${p2.playerName}`);
       waitingPlayer = null;
+
+      // Auto-start timer — if a player hasn't readied after 75s, lock in their current formation
+      setTimeout(() => {
+        const battle = battles[battleId];
+        if (!battle || battle.battleStarted) return;
+        // Force-ready anyone who hasn't locked in yet
+        if (!battle.p1Ready) {
+          battle.p1Ready = true;
+          p1.emit("formation_auto_locked");
+        }
+        if (!battle.p2Ready) {
+          battle.p2Ready = true;
+          p2.emit("formation_auto_locked");
+        }
+        tryStartBattle(battleId);
+      }, FORMATION_TIMER * 1000);
+
     } else {
-      // No one waiting yet — this player waits
       waitingPlayer = socket;
       socket.emit("waiting_for_opponent");
     }
   });
 
-  // When a player sends a move
-  socket.on("send_move", ({ move }) => {
+  // ── Player locks in formation ──
+  socket.on("lock_formation", ({ formation }) => {
     const battleId = socket.battleId;
     if (!battleId || !battles[battleId]) return;
-
     const battle = battles[battleId];
-    const opponent =
-      battle.player1.id === socket.id ? battle.player2 : battle.player1;
+    const role = socket.role;
 
-    // Forward the move to the opponent
-    opponent.emit("opponent_moved", {
-      move,
-      moverName: socket.playerName,
-    });
+    battle[`${role}Formation`] = formation; // { azSlots: [...vivoObjs], szSlots: [...vivoObjs] }
+    battle[`${role}Ready`] = true;
 
-    // Tell the mover it's now the opponent's turn
-    socket.emit("your_move_sent", { move });
+    const opponent = role === "p1" ? battle.p2 : battle.p1;
+    opponent.emit("opponent_ready");
 
-    console.log(`${socket.playerName} used ${move}`);
+    console.log(`${socket.playerName} locked formation`);
+    tryStartBattle(battleId);
   });
 
-  // Handle disconnect
-  socket.on("disconnect", () => {
-    console.log(`Player disconnected: ${socket.id}`);
+  // ── Try to start battle once both are ready ──
+  function tryStartBattle(battleId) {
+    const battle = battles[battleId];
+    if (!battle || battle.battleStarted) return;
+    if (!battle.p1Ready || !battle.p2Ready) return;
 
-    // If they were waiting, clear the waiting slot
+    battle.battleStarted = true;
+
+    // Apply support effects and set up battle state
+    const p1State = buildBattleState(battle.p1Formation);
+    const p2State = buildBattleState(battle.p2Formation);
+
+    battle.p1State = p1State;
+    battle.p2State = p2State;
+
+    battle.p1.emit("battle_start", {
+      yourFormation: battle.p1Formation,
+      oppFormation: battle.p2Formation,
+      yourState: p1State,
+      oppState: p2State,
+      yourTurn: true,
+    });
+    battle.p2.emit("battle_start", {
+      yourFormation: battle.p2Formation,
+      oppFormation: battle.p1Formation,
+      yourState: p2State,
+      oppState: p1State,
+      yourTurn: false,
+    });
+
+    console.log(`Battle started: ${battle.p1.playerName} vs ${battle.p2.playerName}`);
+  }
+
+  // ── Build battle state: apply support effects ──
+  function buildBattleState(formation) {
+    // formation = { azSlots: [vivo, ...], szSlots: [vivo, ...] }
+    const azCount = formation.azSlots.length;
+    const szVivos = formation.szSlots;
+
+    // Start with base stats for AZ vivosaurs
+    const azStates = formation.azSlots.map(v => ({
+      ...v,
+      currentLp: v.lp,
+      effectiveAtk: v.atk,
+      effectiveDef: v.def,
+      effectiveAcc: v.acc,
+      effectiveSpd: v.spd,
+    }));
+
+    // Apply Own AZ support effects from SZ vivosaurs
+    szVivos.forEach(sv => {
+      if (sv.support_target === "Own AZ") {
+        // Split if 2 in AZ, round down
+        const divisor = azCount;
+        const atkBuff = Math.floor(sv.atk_mod * 100 / divisor) / 100;
+        const defBuff = Math.floor(sv.def_mod * 100 / divisor) / 100;
+        const accBuff = Math.floor(sv.acc_mod * 100 / divisor) / 100;
+        const spdBuff = Math.floor(sv.spd_mod * 100 / divisor) / 100;
+
+        azStates.forEach(az => {
+          az.effectiveAtk = Math.max(1, Math.round(az.atk * (1 + atkBuff)));
+          az.effectiveDef = Math.max(0, Math.round(az.def * (1 + defBuff)));
+          az.effectiveAcc = Math.max(1, Math.round(az.acc * (1 + accBuff)));
+          az.effectiveSpd = Math.max(1, Math.round(az.spd * (1 + spdBuff)));
+        });
+      }
+    });
+
+    return {
+      azSlots: azStates,
+      szSlots: szVivos.map(v => ({ ...v, currentLp: v.lp })),
+    };
+  }
+
+  // ── Move handling (placeholder until real moves added) ──
+  socket.on("send_move", ({ moveName, targetIndex }) => {
+    const battleId = socket.battleId;
+    if (!battleId || !battles[battleId]) return;
+    const battle = battles[battleId];
+    const role = socket.role;
+    const oppRole = role === "p1" ? "p2" : "p1";
+    const opponent = battle[oppRole];
+
+    // Forward move to opponent
+    opponent.emit("opponent_moved", {
+      moveName,
+      targetIndex,
+      moverName: socket.playerName,
+    });
+    socket.emit("your_move_sent", { moveName, targetIndex });
+
+    console.log(`${socket.playerName} used ${moveName}`);
+  });
+
+  // ── Sync LP changes to opponent ──
+  socket.on("update_lp", ({ role, slotType, slotIndex, newLp }) => {
+    const battleId = socket.battleId;
+    if (!battleId || !battles[battleId]) return;
+    const battle = battles[battleId];
+    const oppRole = socket.role === "p1" ? "p2" : "p1";
+    battle[oppRole].emit("lp_updated", { role, slotType, slotIndex, newLp });
+  });
+
+  // ── Disconnect ──
+  socket.on("disconnect", () => {
+    console.log(`Disconnected: ${socket.id}`);
     if (waitingPlayer && waitingPlayer.id === socket.id) {
       waitingPlayer = null;
     }
-
-    // If they were in a battle, tell the opponent
     if (socket.battleId && battles[socket.battleId]) {
       const battle = battles[socket.battleId];
-      const opponent =
-        battle.player1.id === socket.id ? battle.player2 : battle.player1;
-      opponent.emit("opponent_disconnected");
+      const oppRole = socket.role === "p1" ? "p2" : "p1";
+      if (battle[oppRole]) battle[oppRole].emit("opponent_disconnected");
       delete battles[socket.battleId];
     }
   });
