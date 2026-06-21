@@ -499,16 +499,15 @@
   <div class="formation-topbar">
     <div class="ftb-title">Formation Select</div>
     <div class="ftb-vs">vs <strong id="fs-opponent-name">???</strong></div>
-    <div class="formation-timer-wrap">
-      <span style="font-size:.75rem;color:var(--muted)">Time remaining</span>
-      <div class="formation-timer" id="fs-timer">75</div>
-    </div>
   </div>
 
   <div class="formation-body">
     <div class="formation-instructions">
-      <strong>Drag to reorder</strong> your vivosaurs. The leftmost 3 enter battle — the right 2 sit out (green).<br>
-      Use the buttons on the left to choose your starting formation.
+      Drag to reorder your vivosaurs.
+    </div>
+    <div style="text-align:center">
+      <div style="font-size:.75rem;color:var(--muted);margin-bottom:4px">Time remaining</div>
+      <div class="formation-timer" id="fs-timer">75</div>
     </div>
 
     <div class="formation-row">
@@ -1078,10 +1077,27 @@ function renderField(who, state) {
     slot.innerHTML = '';
   }
 
-  // AZ slots go in column 2 (even positions: 2, 4, 6)
-  // SZ slots go in column 1 (odd positions: 1, 3, 5)
-  const azPositions = [2, 4]; // up to 2 AZ
-  const szPositions = [3, 5]; // up to 2 SZ
+  // Grid is 2 cols x 3 rows:
+  // col1(left)=SZ, col2(right)=AZ for YOUR side
+  // Slot positions: row1-col1=1, row1-col2=2, row2-col1=3, row2-col2=4, row3-col1=5, row3-col2=6
+  //
+  // YOUR side: AZ is RIGHT col (slots 2,4,6). Single AZ goes center = slot 4. Two AZ = slots 2+6.
+  //            SZ is LEFT col (slots 1,3,5). Single SZ goes center = slot 3. Two SZ = slots 1+5.
+  //
+  // OPP side (mirrored): their AZ is LEFT col (closest to your AZ). Single AZ = slot 3. Two AZ = slots 1+5.
+  //                      their SZ is RIGHT col. Single SZ = slot 4. Two SZ = slots 2+6.
+
+  let azPositions, szPositions;
+  if (who === 'your') {
+    // 1 AZ → center right (slot 4); 2 AZ → top+bottom right (slots 2,6)
+    azPositions = state.azSlots.length === 1 ? [4] : [2, 6];
+    // 1 SZ → center left (slot 3); 2 SZ → top+bottom left (slots 1,5)
+    szPositions = state.szSlots.length === 1 ? [3] : [1, 5];
+  } else {
+    // Opponent mirrored: AZ on left col
+    azPositions = state.azSlots.length === 1 ? [3] : [1, 5];
+    szPositions = state.szSlots.length === 1 ? [4] : [2, 6];
+  }
 
   state.azSlots.forEach((v, i) => {
     const pos = azPositions[i];
@@ -1111,7 +1127,6 @@ function fillSlot(who, pos, vivo, zone) {
     <div class="fs-stats">ATK ${vivo.effectiveAtk} DEF ${vivo.effectiveDef}</div>` : '';
 
   slot.innerHTML = `
-    <span class="fs-zone-tag ${zone}">${zone === 'az' ? 'AZ' : 'SZ'}</span>
     <div class="fs-name">${vivo.name}</div>
     <div class="fs-hp-bar-bg"><div class="fs-hp-bar" id="${who}-hp-bar-${pos}" style="width:${pct}%;background:${hpColor}"></div></div>
     <div class="fs-lp" id="${who}-lp-${pos}">${lp} / ${maxLp} LP</div>
@@ -1130,11 +1145,12 @@ function sendMove(moveName) {
 
 socket.on('your_move_sent', ({ moveName }) => {
   const dmg = MOVE_DAMAGE[moveName] || 0;
-  // Apply damage to first opp AZ slot
+  // Apply damage to first opp AZ slot — opp AZ center slot = slot 3
   if (oppBattleState && oppBattleState.azSlots[0]) {
     oppBattleState.azSlots[0].currentLp = Math.max(0,
       (oppBattleState.azSlots[0].currentLp || oppBattleState.azSlots[0].lp) - dmg);
-    updateSlotLp('opp', 2, oppBattleState.azSlots[0]);
+    const oppAZPos = oppBattleState.azSlots.length === 1 ? 3 : 1;
+    updateSlotLp('opp', oppAZPos, oppBattleState.azSlots[0]);
     socket.emit('update_lp', { role:'opp', slotType:'az', slotIndex:0, newLp: oppBattleState.azSlots[0].currentLp });
   }
   battleLog(`➤ You used <strong>${moveName}</strong>${dmg ? ` — ${dmg} damage!` : ''}`, 'you');
@@ -1149,7 +1165,8 @@ socket.on('opponent_moved', ({ moveName, moverName }) => {
   if (myBattleState && myBattleState.azSlots[0]) {
     myBattleState.azSlots[0].currentLp = Math.max(0,
       (myBattleState.azSlots[0].currentLp || myBattleState.azSlots[0].lp) - dmg);
-    updateSlotLp('your', 2, myBattleState.azSlots[0]);
+    const myAZPos = myBattleState.azSlots.length === 1 ? 4 : 2;
+    updateSlotLp('your', myAZPos, myBattleState.azSlots[0]);
   }
   battleLog(`➤ ${moverName} used <strong>${moveName}</strong>${dmg ? ` — ${dmg} damage!` : ''}`, 'opp');
   myTurn = true;
