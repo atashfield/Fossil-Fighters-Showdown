@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fossil Fighters Champions — Online Battle</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600&display=swap');
+
+    :root {
+      --bone:     #E8DFC8;
+      --dirt:     #8B6914;
+      --rock:     #2A2318;
+      --fossil:   #C4A35A;
+      --hp-green: #4CAF50;
+      --hp-red:   #E53935;
+      --panel:    #1C1810;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--rock);
+      color: var(--bone);
+      font-family: 'Inter', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(2rem, 6vw, 4rem);
+      color: var(--fossil);
+      letter-spacing: 0.05em;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--dirt);
+      text-align: center;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 32px;
+    }
+
+    /* ── Screens ── */
+    .screen { width: 100%; max-width: 540px; }
+    .screen.hidden { display: none; }
+
+    /* ── Login screen ── */
+    #login-screen {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      align-items: center;
+    }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 14px 18px;
+      background: var(--panel);
+      border: 2px solid var(--dirt);
+      border-radius: 8px;
+      color: var(--bone);
+      font-size: 1rem;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus { border-color: var(--fossil); }
+    input[type="text"]::placeholder { color: #5a4f38; }
+
+    .btn {
+      width: 100%;
+      padding: 14px;
+      background: var(--fossil);
+      color: var(--rock);
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      font-family: 'Inter', sans-serif;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn:hover  { background: #d4b46a; }
+    .btn:active { transform: scale(0.98); }
+    .btn:disabled { background: #4a3e28; color: #7a6a4a; cursor: default; }
+
+    /* ── Waiting screen ── */
+    #waiting-screen { text-align: center; }
+
+    .spinner {
+      width: 48px; height: 48px;
+      border: 4px solid var(--dirt);
+      border-top-color: var(--fossil);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 24px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Battle screen ── */
+    #battle-screen { display: flex; flex-direction: column; gap: 16px; }
+
+    .status-bar {
+      background: var(--panel);
+      border: 1px solid var(--dirt);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 0.85rem;
+      color: var(--fossil);
+      text-align: center;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+    }
+
+    .fighters {
+      display: flex;
+      gap: 12px;
+      justify-content: space-between;
+    }
+
+    .fighter-card {
+      flex: 1;
+      background: var(--panel);
+      border: 2px solid var(--dirt);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .fighter-card.you   { border-color: var(--fossil); }
+    .fighter-card .label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--dirt);
+      margin-bottom: 4px;
+    }
+    .fighter-card .name {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.4rem;
+      color: var(--bone);
+      margin-bottom: 8px;
+    }
+    .hp-bar-bg {
+      background: #3a3020;
+      border-radius: 4px;
+      height: 10px;
+      overflow: hidden;
+    }
+    .hp-bar {
+      height: 100%;
+      background: var(--hp-green);
+      border-radius: 4px;
+      transition: width 0.4s ease, background 0.4s;
+    }
+    .hp-text {
+      font-size: 0.75rem;
+      color: var(--bone);
+      margin-top: 4px;
+      text-align: right;
+    }
+
+    .move-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .move-btn {
+      padding: 12px;
+      background: var(--panel);
+      border: 2px solid var(--dirt);
+      border-radius: 8px;
+      color: var(--bone);
+      font-size: 0.9rem;
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      text-align: left;
+    }
+    .move-btn:hover:not(:disabled)   { border-color: var(--fossil); background: #2a2010; }
+    .move-btn:disabled { opacity: 0.4; cursor: default; }
+    .move-btn .move-name  { display: block; }
+    .move-btn .move-power { font-size: 0.72rem; color: var(--dirt); margin-top: 2px; }
+
+    .battle-log {
+      background: var(--panel);
+      border: 1px solid var(--dirt);
+      border-radius: 8px;
+      padding: 12px 14px;
+      height: 130px;
+      overflow-y: auto;
+      font-size: 0.82rem;
+      line-height: 1.6;
+    }
+    .battle-log p { margin-bottom: 2px; }
+    .battle-log p.highlight { color: var(--fossil); }
+    .battle-log p.opponent  { color: #cf8; }
+
+    /* ── End screen ── */
+    #end-screen { text-align: center; }
+    .result-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 3rem;
+      margin-bottom: 8px;
+    }
+    .result-title.win  { color: var(--fossil); }
+    .result-title.lose { color: var(--hp-red); }
+  </style>
+</head>
+<body>
+
+  <h1>Fossil Fighters</h1>
+  <p class="subtitle">Champions — Online Battle Proof of Concept</p>
+
+  <!-- LOGIN -->
+  <div id="login-screen" class="screen">
+    <input id="name-input" type="text" placeholder="Enter your trainer name…" maxlength="20" />
+    <button class="btn" onclick="findMatch()">Find Opponent</button>
+  </div>
+
+  <!-- WAITING -->
+  <div id="waiting-screen" class="screen hidden">
+    <div class="spinner"></div>
+    <p>Searching for an opponent…</p>
+    <p style="font-size:0.8rem;color:var(--dirt);margin-top:8px;">Open this page in another tab or browser to test!</p>
+  </div>
+
+  <!-- BATTLE -->
+  <div id="battle-screen" class="screen hidden">
+    <div class="status-bar" id="turn-status">— VS —</div>
+
+    <div class="fighters">
+      <div class="fighter-card you">
+        <div class="label">You</div>
+        <div class="name" id="your-vivo-name">T-Rex</div>
+        <div class="hp-bar-bg"><div class="hp-bar" id="your-hp-bar" style="width:100%"></div></div>
+        <div class="hp-text"><span id="your-hp">450</span> / 450 HP</div>
+      </div>
+      <div class="fighter-card">
+        <div class="label">Opponent</div>
+        <div class="name" id="opp-vivo-name">Tricera</div>
+        <div class="hp-bar-bg"><div class="hp-bar" id="opp-hp-bar" style="width:100%"></div></div>
+        <div class="hp-text"><span id="opp-hp">380</span> / 380 HP</div>
+      </div>
+    </div>
+
+    <div class="move-grid" id="move-grid">
+      <button class="move-btn" onclick="sendMove('Fossil Cannon')">
+        <span class="move-name">Fossil Cannon</span>
+        <span class="move-power">⚡ Power 50 · Normal</span>
+      </button>
+      <button class="move-btn" onclick="sendMove('Stone Stomp')">
+        <span class="move-name">Stone Stomp</span>
+        <span class="move-power">⚡ Power 40 · Earth</span>
+      </button>
+      <button class="move-btn" onclick="sendMove('Dino Rush')">
+        <span class="move-name">Dino Rush</span>
+        <span class="move-power">⚡ Power 65 · Normal</span>
+      </button>
+      <button class="move-btn" onclick="sendMove('Ancient Roar')">
+        <span class="move-name">Ancient Roar</span>
+        <span class="move-power">🌀 Lowers DEF</span>
+      </button>
+    </div>
+
+    <div class="battle-log" id="battle-log">
+      <p>Battle started! Good luck, Trainer.</p>
+    </div>
+  </div>
+
+  <!-- END -->
+  <div id="end-screen" class="screen hidden">
+    <div class="result-title" id="result-title">—</div>
+    <p id="result-msg" style="color:var(--dirt);margin-bottom:24px;"></p>
+    <button class="btn" onclick="location.reload()">Play Again</button>
+  </div>
+
+<script>
+  const socket = io();
+  let myTurn = false;
+
+  // ── Simple HP state ──
+  const state = {
+    yourHp:    450,  yourMaxHp: 450,
+    oppHp:     380,  oppMaxHp:  380,
+  };
+
+  const moveDamage = {
+    'Fossil Cannon': 50,
+    'Stone Stomp':   40,
+    'Dino Rush':     65,
+    'Ancient Roar':  0,   // debuff, no direct damage in this demo
+  };
+
+  // ── Find match ──
+  function findMatch() {
+    const name = document.getElementById('name-input').value.trim();
+    if (!name) { alert('Please enter a trainer name!'); return; }
+    show('waiting-screen');
+    socket.emit('find_match', name);
+  }
+
+  // ── Match found ──
+  socket.on('match_found', ({ opponent, yourTurn }) => {
+    myTurn = yourTurn;
+    document.getElementById('turn-status').textContent =
+      yourTurn ? '⚔️ Your turn — pick a move!' : `⏳ ${opponent}'s turn…`;
+    setMoveButtons(yourTurn);
+    show('battle-screen');
+    log(`⚔️ Battle vs <strong>${opponent}</strong> — Begin!`);
+  });
+
+  socket.on('waiting_for_opponent', () => {
+    // already showing waiting screen
+  });
+
+  // ── Send a move ──
+  function sendMove(move) {
+    if (!myTurn) return;
+    socket.emit('send_move', { move });
+  }
+
+  socket.on('your_move_sent', ({ move }) => {
+    const dmg = moveDamage[move] || 0;
+    state.oppHp = Math.max(0, state.oppHp - dmg);
+    updateHp('opp', state.oppHp, state.oppMaxHp);
+    log(`➤ You used <strong>${move}</strong>${dmg ? ` — dealt ${dmg} damage!` : ' — lowered opponent DEF!'}`, 'highlight');
+    myTurn = false;
+    document.getElementById('turn-status').textContent = '⏳ Opponent\'s turn…';
+    setMoveButtons(false);
+    if (state.oppHp <= 0) endGame(true);
+  });
+
+  socket.on('opponent_moved', ({ move, moverName }) => {
+    const dmg = moveDamage[move] || 0;
+    state.yourHp = Math.max(0, state.yourHp - dmg);
+    updateHp('your', state.yourHp, state.yourMaxHp);
+    log(`➤ ${moverName} used <strong>${move}</strong>${dmg ? ` — you took ${dmg} damage!` : '!'}`, 'opponent');
+    myTurn = true;
+    document.getElementById('turn-status').textContent = '⚔️ Your turn — pick a move!';
+    setMoveButtons(true);
+    if (state.yourHp <= 0) endGame(false);
+  });
+
+  socket.on('opponent_disconnected', () => {
+    log('⚠️ Opponent disconnected.');
+    document.getElementById('turn-status').textContent = 'Opponent left the battle.';
+    setMoveButtons(false);
+  });
+
+  // ── Helpers ──
+  function show(id) {
+    ['login-screen','waiting-screen','battle-screen','end-screen'].forEach(s => {
+      document.getElementById(s).classList.toggle('hidden', s !== id);
+    });
+  }
+
+  function log(msg, cls) {
+    const el = document.getElementById('battle-log');
+    const p = document.createElement('p');
+    if (cls) p.className = cls;
+    p.innerHTML = msg;
+    el.appendChild(p);
+    el.scrollTop = el.scrollHeight;
+  }
+
+  function updateHp(who, current, max) {
+    const pct = Math.max(0, (current / max) * 100);
+    const bar = document.getElementById(`${who}-hp-bar`);
+    bar.style.width = pct + '%';
+    bar.style.background = pct > 50 ? '#4CAF50' : pct > 25 ? '#FFC107' : '#E53935';
+    document.getElementById(`${who}-hp`).textContent = current;
+  }
+
+  function setMoveButtons(enabled) {
+    document.querySelectorAll('.move-btn').forEach(b => b.disabled = !enabled);
+  }
+
+  function endGame(won) {
+    setMoveButtons(false);
+    const title = document.getElementById('result-title');
+    title.textContent = won ? 'VICTORY!' : 'DEFEATED';
+    title.className = 'result-title ' + (won ? 'win' : 'lose');
+    document.getElementById('result-msg').textContent =
+      won ? 'Your vivosaur crushed the opponent!' : 'Your vivosaur has fainted…';
+    setTimeout(() => show('end-screen'), 1200);
+  }
+
+  // Enter key on name input
+  document.getElementById('name-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') findMatch();
+  });
+</script>
+</body>
+</html>

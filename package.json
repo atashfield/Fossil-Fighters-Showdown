@@ -1,0 +1,13 @@
+{
+  "name": "fossil-fighters-poc",
+  "version": "1.0.0",
+  "description": "Fossil Fighters Champions multiplayer proof of concept",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "socket.io": "^4.6.1"
+  }
+}
