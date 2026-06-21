@@ -1,604 +1,385 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Fossil Fighter Showdown</title>
   <script src="/socket.io/socket.io.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600&display=swap');
 
     :root {
-      --bg:       #1a1a2e;
-      --sidebar:  #16213e;
-      --panel:    #0f3460;
-      --accent:   #C4A35A;
-      --accent2:  #e94560;
-      --text:     #e0e0e0;
-      --muted:    #8892a4;
-      --border:   #2a3a5c;
-      --fire:     #e05c2a;
-      --air:      #5ab4e0;
-      --earth:    #4caf7d;
-      --water:    #1e88e5;
-      --neutral:  #90a0b0;
-      --legendary:#ffd700;
-      --hp-green: #4caf50;
-      --hp-yellow:#ffc107;
-      --hp-red:   #e53935;
+      --bg:        #1a1a2e;
+      --sidebar:   #16213e;
+      --panel:     #0f3460;
+      --accent:    #C4A35A;
+      --accent2:   #e94560;
+      --text:      #e0e0e0;
+      --muted:     #8892a4;
+      --border:    #2a3a5c;
+      --fire:      #e05c2a;
+      --air:       #5ab4e0;
+      --earth:     #4caf7d;
+      --water:     #1e88e5;
+      --neutral:   #90a0b0;
+      --legendary: #ffd700;
+      --hp-green:  #4caf50;
+      --hp-yellow: #ffc107;
+      --hp-red:    #e53935;
+      --az-color:  #e05c2a;
+      --sz-color:  #1e88e5;
+      --unused-color: #4caf7d;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
-      background: var(--bg);
-      color: var(--text);
+      background: var(--bg); color: var(--text);
       font-family: 'Inter', sans-serif;
-      height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      height: 100vh; display: flex; flex-direction: column; overflow: hidden;
     }
 
-    /* ── TOP NAR ── */
+    /* ── TOPBAR ── */
     .topbar {
-      background: var(--sidebar);
-      border-bottom: 2px solid var(--accent);
-      padding: 0 20px;
-      height: 52px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      flex-shrink: 0;
-      z-index: 100;
+      background: var(--sidebar); border-bottom: 2px solid var(--accent);
+      padding: 0 20px; height: 52px; display: flex; align-items: center;
+      gap: 16px; flex-shrink: 0; z-index: 100;
     }
-    .topbar-logo {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 1.6rem;
-      color: var(--accent);
-      letter-spacing: 0.06em;
-      white-space: nowrap;
-    }
+    .topbar-logo { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; color: var(--accent); letter-spacing: .06em; white-space: nowrap; }
     .topbar-logo span { color: var(--accent2); }
-    .topbar-user {
-      margin-left: auto;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .username-display {
-      font-size: 0.85rem;
-      color: var(--muted);
-    }
+    .topbar-user { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .username-display { font-size: .85rem; color: var(--muted); }
     .username-display strong { color: var(--accent); }
-    .btn-sm {
-      padding: 5px 12px;
-      border-radius: 4px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--muted);
-      font-size: 0.78rem;
-      font-family: 'Inter', sans-serif;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
+    .btn-sm { padding: 5px 12px; border-radius: 4px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: .78rem; font-family: 'Inter', sans-serif; cursor: pointer; transition: all .15s; }
     .btn-sm:hover { border-color: var(--accent); color: var(--accent); }
 
-    /* ── MAIN LAYOUT ── */
-    .main {
-      display: flex;
-      flex: 1;
-      overflow: hidden;
-    }
-
-    /* ── SIDEBAR ── */
-    .sidebar {
-      width: 180px;
-      background: var(--sidebar);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      padding: 16px 10px;
-      gap: 6px;
-      flex-shrink: 0;
-    }
-    .sidebar-btn {
-      width: 100%;
-      padding: 11px 14px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--text);
-      font-size: 0.88rem;
-      font-family: 'Inter', sans-serif;
-      font-weight: 500;
-      cursor: pointer;
-      text-align: left;
-      transition: all 0.15s;
-      display: flex;
-      align-items: center;
-      gap: 9px;
-    }
-    .sidebar-btn:hover { background: var(--panel); border-color: var(--accent); color: var(--accent); }
-    .sidebar-btn.active { background: var(--panel); border-color: var(--accent); color: var(--accent); }
+    /* ── LAYOUT ── */
+    .main { display: flex; flex: 1; overflow: hidden; }
+    .sidebar { width: 180px; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 16px 10px; gap: 6px; flex-shrink: 0; }
+    .sidebar-btn { width: 100%; padding: 11px 14px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--text); font-size: .88rem; font-family: 'Inter', sans-serif; font-weight: 500; cursor: pointer; text-align: left; transition: all .15s; display: flex; align-items: center; gap: 9px; }
+    .sidebar-btn:hover, .sidebar-btn.active { background: var(--panel); border-color: var(--accent); color: var(--accent); }
     .sidebar-btn .icon { font-size: 1rem; width: 18px; text-align: center; }
     .sidebar-divider { height: 1px; background: var(--border); margin: 4px 0; }
-
-    /* ── CONTENT AREA ── */
-    .content {
-      flex: 1;
-      overflow-y: auto;
-      position: relative;
-    }
-
-    /* ── PANELS ── */
+    .content { flex: 1; overflow-y: auto; position: relative; }
     .panel { display: none; padding: 28px 32px; height: 100%; }
     .panel.active { display: block; }
 
-    /* ── HOME PANEL ── */
-    .home-welcome {
-      max-width: 640px;
-      margin: 60px auto 0;
-      text-align: center;
-    }
-    .home-welcome h1 {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 3.2rem;
-      color: var(--accent);
-      letter-spacing: 0.06em;
-      margin-bottom: 6px;
-    }
+    /* ── HOME ── */
+    .home-welcome { max-width: 640px; margin: 60px auto 0; text-align: center; }
+    .home-welcome h1 { font-family: 'Bebas Neue', sans-serif; font-size: 3.2rem; color: var(--accent); letter-spacing: .06em; margin-bottom: 6px; }
     .home-welcome h1 span { color: var(--accent2); }
-    .home-welcome p {
-      font-size: 1.05rem;
-      color: var(--muted);
-      line-height: 1.7;
-      margin-top: 18px;
-    }
-    .home-badge {
-      display: inline-block;
-      margin-top: 28px;
-      padding: 6px 16px;
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      font-size: 0.78rem;
-      color: var(--muted);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-    }
+    .home-welcome p { font-size: 1.05rem; color: var(--muted); line-height: 1.7; margin-top: 18px; }
+    .home-badge { display: inline-block; margin-top: 28px; padding: 6px 16px; border: 1px solid var(--border); border-radius: 20px; font-size: .78rem; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
 
-    /* ── TEAM BUILDER PANEL ── */
-    .tb-layout {
-      display: grid;
-      grid-template-columns: 1fr 320px;
-      gap: 20px;
-      height: 100%;
-    }
+    /* ── TEAM BUILDER ── */
+    .tb-layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; height: 100%; }
     .tb-left { display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
     .tb-right { display: flex; flex-direction: column; gap: 12px; }
-
-    .panel-title {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 1.5rem;
-      color: var(--accent);
-      letter-spacing: 0.05em;
-      margin-bottom: 4px;
-    }
-
-    .search-bar {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    .search-bar input {
-      flex: 1;
-      padding: 8px 12px;
-      background: var(--sidebar);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      font-family: 'Inter', sans-serif;
-      font-size: 0.85rem;
-      outline: none;
-    }
+    .panel-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; color: var(--accent); letter-spacing: .05em; margin-bottom: 4px; }
+    .search-bar { display: flex; gap: 8px; }
+    .search-bar input { flex: 1; padding: 8px 12px; background: var(--sidebar); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'Inter', sans-serif; font-size: .85rem; outline: none; }
     .search-bar input:focus { border-color: var(--accent); }
-    .filter-row {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-    .filter-btn {
-      padding: 4px 10px;
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--muted);
-      font-size: 0.75rem;
-      font-family: 'Inter', sans-serif;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .filter-btn:hover, .filter-btn.active {
-      border-color: var(--accent);
-      color: var(--accent);
-      background: rgba(196,163,90,0.1);
-    }
-    .filter-btn.type-fire   { --tc: var(--fire); }
-    .filter-btn.type-air    { --tc: var(--air); }
-    .filter-btn.type-earth  { --tc: var(--earth); }
-    .filter-btn.type-water  { --tc: var(--water); }
-    .filter-btn.type-neutral{ --tc: var(--neutral); }
-    .filter-btn.type-legendary { --tc: var(--legendary); }
-    .filter-btn.type-fire.active, .filter-btn.type-air.active,
-    .filter-btn.type-earth.active, .filter-btn.type-water.active,
-    .filter-btn.type-neutral.active, .filter-btn.type-legendary.active {
-      border-color: var(--tc); color: var(--tc); background: rgba(255,255,255,0.05);
-    }
-
-    .vivo-grid {
-      flex: 1;
-      overflow-y: auto;
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-      gap: 8px;
-      align-content: start;
-      padding-right: 4px;
-    }
+    .filter-row { display: flex; gap: 6px; flex-wrap: wrap; }
+    .filter-btn { padding: 4px 10px; border-radius: 12px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: .75rem; font-family: 'Inter', sans-serif; cursor: pointer; transition: all .15s; }
+    .filter-btn:hover, .filter-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(196,163,90,.1); }
+    .vivo-grid { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(115px,1fr)); gap: 8px; align-content: start; padding-right: 4px; }
     .vivo-grid::-webkit-scrollbar { width: 4px; }
-    .vivo-grid::-webkit-scrollbar-track { background: transparent; }
     .vivo-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-
-    .vivo-card {
-      background: var(--sidebar);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 8px;
-      cursor: pointer;
-      transition: all 0.15s;
-      text-align: center;
-      user-select: none;
-    }
+    .vivo-card { background: var(--sidebar); border: 1px solid var(--border); border-radius: 8px; padding: 10px 8px; cursor: pointer; transition: all .15s; text-align: center; user-select: none; }
     .vivo-card:hover { border-color: var(--accent); background: var(--panel); }
-    .vivo-card.selected { border-color: var(--accent); background: rgba(196,163,90,0.15); }
-    .vivo-card.disabled { opacity: 0.35; cursor: default; pointer-events: none; }
-    .vivo-card .vc-name {
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: var(--text);
-      margin-bottom: 4px;
-      line-height: 1.2;
-    }
-    .vivo-card .vc-type {
-      font-size: 0.65rem;
-      padding: 2px 6px;
-      border-radius: 10px;
-      display: inline-block;
-      font-weight: 600;
-    }
-    .vivo-card .vc-lp { font-size: 0.68rem; color: var(--muted); margin-top: 3px; }
-
-    /* type colors */
-    .type-fire    { background: rgba(224,92,42,0.2);  color: #ff8c60; border: 1px solid rgba(224,92,42,0.4); }
-    .type-air     { background: rgba(90,180,224,0.2); color: #7ecfef; border: 1px solid rgba(90,180,224,0.4); }
-    .type-earth   { background: rgba(76,175,125,0.2); color: #6fcfa0; border: 1px solid rgba(76,175,125,0.4); }
-    .type-water   { background: rgba(30,136,229,0.2); color: #64b5f6; border: 1px solid rgba(30,136,229,0.4); }
-    .type-neutral { background: rgba(144,160,176,0.2);color: #b0bec5; border: 1px solid rgba(144,160,176,0.4); }
-    .type-legendary { background: rgba(255,215,0,0.15); color: #ffd700; border: 1px solid rgba(255,215,0,0.4); }
-
-    /* ── TEAM SLOTS ── */
-    .tb-section-title {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
-    .team-slots {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    .team-slot {
-      background: var(--sidebar);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 12px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      min-height: 52px;
-    }
+    .vivo-card.selected { border-color: var(--accent); background: rgba(196,163,90,.15); }
+    .vivo-card.disabled { opacity: .35; cursor: default; pointer-events: none; }
+    .vivo-card .vc-name { font-size: .75rem; font-weight: 600; color: var(--text); margin-bottom: 4px; line-height: 1.2; }
+    .vivo-card .vc-lp { font-size: .68rem; color: var(--muted); margin-top: 3px; }
+    .type-badge { font-size: .65rem; padding: 2px 6px; border-radius: 10px; display: inline-block; font-weight: 600; }
+    .type-fire    { background: rgba(224,92,42,.2);  color: #ff8c60; border: 1px solid rgba(224,92,42,.4); }
+    .type-air     { background: rgba(90,180,224,.2); color: #7ecfef; border: 1px solid rgba(90,180,224,.4); }
+    .type-earth   { background: rgba(76,175,125,.2); color: #6fcfa0; border: 1px solid rgba(76,175,125,.4); }
+    .type-water   { background: rgba(30,136,229,.2); color: #64b5f6; border: 1px solid rgba(30,136,229,.4); }
+    .type-neutral { background: rgba(144,160,176,.2);color: #b0bec5; border: 1px solid rgba(144,160,176,.4); }
+    .type-legendary { background: rgba(255,215,0,.15); color: #ffd700; border: 1px solid rgba(255,215,0,.4); }
+    .tb-section-title { font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 6px; }
+    .team-slots { display: flex; flex-direction: column; gap: 6px; }
+    .team-slot { background: var(--sidebar); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; min-height: 52px; }
     .team-slot.filled { border-color: var(--accent); }
-    .slot-num {
-      font-size: 0.7rem;
-      color: var(--muted);
-      width: 14px;
-      flex-shrink: 0;
-    }
-    .slot-info { flex: 1; }
-    .slot-name { font-size: 0.82rem; font-weight: 600; color: var(--text); }
-    .slot-sub  { font-size: 0.68rem; color: var(--muted); }
-    .slot-empty { font-size: 0.78rem; color: var(--muted); font-style: italic; }
-    .slot-remove {
-      background: none;
-      border: none;
-      color: var(--muted);
-      cursor: pointer;
-      font-size: 1rem;
-      padding: 2px 4px;
-      border-radius: 4px;
-      transition: color 0.15s;
-      line-height: 1;
-    }
+    .slot-num { font-size: .7rem; color: var(--muted); width: 14px; flex-shrink: 0; }
+    .slot-name { font-size: .82rem; font-weight: 600; color: var(--text); }
+    .slot-sub  { font-size: .68rem; color: var(--muted); }
+    .slot-empty { font-size: .78rem; color: var(--muted); font-style: italic; }
+    .slot-remove { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 2px 4px; border-radius: 4px; transition: color .15s; line-height: 1; }
     .slot-remove:hover { color: var(--accent2); }
-
     .team-actions { display: flex; flex-direction: column; gap: 8px; }
-    .btn-primary {
-      width: 100%;
-      padding: 11px;
-      border-radius: 6px;
-      border: none;
-      background: var(--accent);
-      color: #1a1a2e;
-      font-size: 0.88rem;
-      font-weight: 600;
-      font-family: 'Inter', sans-serif;
-      cursor: pointer;
-      transition: background 0.15s, transform 0.1s;
-    }
+    .btn-primary { width: 100%; padding: 11px; border-radius: 6px; border: none; background: var(--accent); color: #1a1a2e; font-size: .88rem; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; transition: background .15s, transform .1s; }
     .btn-primary:hover { background: #d4b46a; }
-    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:active { transform: scale(.98); }
     .btn-primary:disabled { background: #3a3a4a; color: #5a5a6a; cursor: default; }
-    .btn-secondary {
-      width: 100%;
-      padding: 10px;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      background: transparent;
-      color: var(--muted);
-      font-size: 0.85rem;
-      font-family: 'Inter', sans-serif;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
+    .btn-secondary { width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: .85rem; font-family: 'Inter', sans-serif; cursor: pointer; transition: all .15s; }
     .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
-
     .saved-teams { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; max-height: 180px; }
-    .saved-team-row {
-      background: var(--sidebar);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 8px 10px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      transition: border-color 0.15s;
-    }
+    .saved-team-row { background: var(--sidebar); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; display: flex; align-items: center; gap: 8px; cursor: pointer; transition: border-color .15s; }
     .saved-team-row:hover { border-color: var(--accent); }
-    .saved-team-row.active-team { border-color: var(--accent); background: rgba(196,163,90,0.1); }
-    .saved-team-name { flex: 1; font-size: 0.82rem; font-weight: 600; }
-    .saved-team-members { font-size: 0.68rem; color: var(--muted); }
-    .active-badge {
-      font-size: 0.62rem;
-      padding: 2px 6px;
-      background: var(--accent);
-      color: #1a1a2e;
-      border-radius: 10px;
-      font-weight: 700;
-    }
-    .saved-team-delete {
-      background: none; border: none; color: var(--muted);
-      cursor: pointer; font-size: 0.85rem; padding: 2px;
-    }
+    .saved-team-row.active-team { border-color: var(--accent); background: rgba(196,163,90,.1); }
+    .saved-team-name { flex: 1; font-size: .82rem; font-weight: 600; }
+    .saved-team-members { font-size: .68rem; color: var(--muted); }
+    .active-badge { font-size: .62rem; padding: 2px 6px; background: var(--accent); color: #1a1a2e; border-radius: 10px; font-weight: 700; }
+    .saved-team-delete { background: none; border: none; color: var(--muted); cursor: pointer; font-size: .85rem; padding: 2px; }
     .saved-team-delete:hover { color: var(--accent2); }
 
-    /* ── BATTLE PANEL ── */
-    .battle-panel { max-width: 500px; margin: 0 auto; padding-top: 40px; }
-    .battle-status { text-align: center; margin-bottom: 24px; }
-    .battle-status p { color: var(--muted); font-size: 0.9rem; margin-top: 8px; }
-    .active-team-preview {
-      background: var(--sidebar);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px;
-      margin-bottom: 20px;
-    }
-    .atp-title { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 10px; }
-    .atp-members { display: flex; flex-direction: column; gap: 6px; }
-    .atp-member { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; }
-    .atp-member .type-pip {
-      width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-    }
-    .atp-member .atp-lp { color: var(--muted); font-size: 0.72rem; margin-left: auto; }
-
-    /* ── CHAT PANEL ── */
-    .chat-panel { max-width: 480px; margin: 60px auto 0; text-align: center; }
-    .chat-panel p { color: var(--muted); margin-bottom: 24px; line-height: 1.6; }
-    .chat-input-row { display: flex; gap: 10px; }
-    .chat-input-row input {
-      flex: 1; padding: 10px 14px;
-      background: var(--sidebar); border: 1px solid var(--border);
-      border-radius: 6px; color: var(--text); font-family: 'Inter', sans-serif;
-      font-size: 0.9rem; outline: none;
-    }
-    .chat-input-row input:focus { border-color: var(--accent); }
-    .coming-soon {
-      margin-top: 20px; padding: 12px;
-      background: var(--sidebar); border: 1px solid var(--border);
-      border-radius: 8px; font-size: 0.82rem; color: var(--muted);
-      font-style: italic;
-    }
+    /* ── BATTLE NAV PANEL ── */
+    .battle-nav-panel { max-width: 500px; margin: 0 auto; padding-top: 40px; }
+    .atp-title { font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 10px; }
+    .active-team-preview { background: var(--sidebar); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 20px; }
+    .atp-member { display: flex; align-items: center; gap: 8px; font-size: .82rem; margin-bottom: 4px; }
+    .type-pip { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .atp-lp { color: var(--muted); font-size: .72rem; margin-left: auto; }
 
     /* ── MODALS ── */
-    .modal-overlay {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.7);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 1000;
-    }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; z-index: 1000; }
     .modal-overlay.hidden { display: none; }
-    .modal {
-      background: var(--sidebar);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 28px 32px;
-      width: 100%;
-      max-width: 400px;
-    }
-    .modal h2 {
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 1.6rem;
-      color: var(--accent);
-      margin-bottom: 6px;
-      letter-spacing: 0.05em;
-    }
-    .modal p { font-size: 0.85rem; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
-    .modal input {
-      width: 100%;
-      padding: 10px 14px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      color: var(--text);
-      font-family: 'Inter', sans-serif;
-      font-size: 0.9rem;
-      outline: none;
-      margin-bottom: 10px;
-    }
+    .modal { background: var(--sidebar); border: 1px solid var(--border); border-radius: 12px; padding: 28px 32px; width: 100%; max-width: 400px; }
+    .modal h2 { font-family: 'Bebas Neue', sans-serif; font-size: 1.6rem; color: var(--accent); margin-bottom: 6px; letter-spacing: .05em; }
+    .modal p { font-size: .85rem; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
+    .modal input { width: 100%; padding: 10px 14px; background: var(--bg); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: 'Inter', sans-serif; font-size: .9rem; outline: none; margin-bottom: 10px; }
     .modal input:focus { border-color: var(--accent); }
     .modal-actions { display: flex; gap: 10px; margin-top: 6px; }
 
-    /* ── BATTLE SCREEN (hidden initially) ── */
-    #battle-screen {
+    /* ══════════════════════════════════════════
+       FORMATION SCREEN
+    ══════════════════════════════════════════ */
+    #formation-screen {
       position: fixed; inset: 0; z-index: 500;
       background: var(--bg);
-      display: none;
-      flex-direction: column;
+      display: none; flex-direction: column;
+    }
+    #formation-screen.active { display: flex; }
+
+    .formation-topbar {
+      background: var(--sidebar); border-bottom: 1px solid var(--border);
+      padding: 12px 24px; display: flex; align-items: center; gap: 16px;
+    }
+    .formation-topbar .ftb-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; color: var(--accent); letter-spacing: .05em; }
+    .formation-topbar .ftb-vs { color: var(--muted); font-size: .9rem; }
+    .formation-topbar .ftb-vs strong { color: var(--text); }
+
+    .formation-timer-wrap { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+    .formation-timer {
+      font-family: 'Bebas Neue', sans-serif; font-size: 2rem;
+      color: var(--accent); letter-spacing: .05em; min-width: 52px; text-align: right;
+    }
+    .formation-timer.urgent { color: var(--accent2); animation: pulse .5s infinite alternate; }
+    @keyframes pulse { from { opacity: 1; } to { opacity: .5; } }
+
+    .formation-body {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 24px; gap: 32px;
+    }
+
+    .formation-instructions {
+      text-align: center; color: var(--muted); font-size: .88rem; line-height: 1.6;
+      max-width: 560px;
+    }
+    .formation-instructions strong { color: var(--text); }
+
+    /* Formation toggle + lineup row */
+    .formation-row {
+      display: flex; align-items: center; gap: 16px;
+    }
+
+    /* AZ/SZ toggle buttons */
+    .formation-toggle {
+      display: flex; flex-direction: column; gap: 6px;
+    }
+    .ftoggle-btn {
+      width: 52px; height: 52px; border-radius: 8px; border: 2px solid var(--border);
+      background: var(--sidebar); cursor: pointer; display: flex; align-items: center;
+      justify-content: center; transition: all .15s; padding: 6px;
+    }
+    .ftoggle-btn:hover { border-color: var(--accent); }
+    .ftoggle-btn.active-sz { border-color: var(--sz-color); background: rgba(30,136,229,.15); }
+    .ftoggle-btn.active-az { border-color: var(--az-color); background: rgba(224,92,42,.15); }
+    .ftoggle-btn svg { width: 100%; height: 100%; }
+
+    /* Vivosaur lineup (draggable) */
+    .vivo-lineup {
+      display: flex; gap: 10px; align-items: center;
+    }
+    .lineup-card {
+      width: 100px; height: 80px; border-radius: 10px; border: 2px solid var(--border);
+      background: var(--sidebar); display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 4px;
+      cursor: grab; user-select: none; transition: all .15s;
+      padding: 8px; text-align: center; position: relative;
+    }
+    .lineup-card:active { cursor: grabbing; opacity: .7; }
+    .lineup-card.dragging { opacity: .4; }
+    .lineup-card.drag-over { border-color: var(--accent); background: rgba(196,163,90,.1); }
+    .lineup-card .lc-name { font-size: .75rem; font-weight: 600; color: var(--text); line-height: 1.2; }
+    .lineup-card .lc-lp   { font-size: .65rem; color: var(--muted); }
+    .lineup-card .lc-zone-label {
+      position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+      font-size: .6rem; font-weight: 700; padding: 1px 7px; border-radius: 8px;
+      text-transform: uppercase; letter-spacing: .06em; white-space: nowrap;
+    }
+    /* zone colors */
+    .lineup-card.zone-az { border-color: var(--az-color); background: rgba(224,92,42,.12); }
+    .lineup-card.zone-sz { border-color: var(--sz-color); background: rgba(30,136,229,.12); }
+    .lineup-card.zone-unused { border-color: var(--unused-color); background: rgba(76,175,125,.08); opacity: .6; }
+    .lc-zone-label.az { background: var(--az-color); color: #fff; }
+    .lc-zone-label.sz { background: var(--sz-color); color: #fff; }
+    .lc-zone-label.unused { background: var(--unused-color); color: #1a1a2e; }
+
+    /* lineup separator */
+    .lineup-separator {
+      width: 2px; height: 60px; background: var(--border);
+      border-radius: 2px; flex-shrink: 0;
+    }
+
+    .formation-ready-area { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .btn-ready {
+      padding: 14px 48px; border-radius: 8px; border: none;
+      background: var(--accent); color: #1a1a2e;
+      font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; letter-spacing: .06em;
+      cursor: pointer; transition: all .15s;
+    }
+    .btn-ready:hover { background: #d4b46a; transform: scale(1.02); }
+    .btn-ready:disabled { background: #3a3a4a; color: #5a5a6a; cursor: default; transform: none; }
+    .btn-ready.locked { background: var(--hp-green); color: #fff; }
+    .waiting-for-opp { font-size: .82rem; color: var(--muted); font-style: italic; }
+
+    /* ══════════════════════════════════════════
+       BATTLE SCREEN
+    ══════════════════════════════════════════ */
+    #battle-screen {
+      position: fixed; inset: 0; z-index: 600;
+      background: var(--bg); display: none; flex-direction: column;
     }
     #battle-screen.active { display: flex; }
 
     .battle-topbar {
-      background: var(--sidebar);
-      border-bottom: 1px solid var(--border);
-      padding: 10px 20px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      font-size: 0.85rem;
-      color: var(--muted);
+      background: var(--sidebar); border-bottom: 1px solid var(--border);
+      padding: 10px 20px; display: flex; align-items: center; gap: 12px;
+      font-size: .85rem; color: var(--muted); flex-shrink: 0;
     }
     .battle-topbar strong { color: var(--accent); }
-    .battle-topbar .btb-right { margin-left: auto; }
 
-    .battle-main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 20px;
-      gap: 16px;
-      overflow: hidden;
+    .battle-body {
+      flex: 1; display: flex; flex-direction: column;
+      padding: 16px 20px; gap: 12px; overflow: hidden;
     }
 
-    .fighters { display: flex; gap: 16px; }
-    .fighter-card {
-      flex: 1;
-      background: var(--sidebar);
-      border: 2px solid var(--border);
-      border-radius: 10px;
-      padding: 14px;
-    }
-    .fighter-card.you { border-color: var(--accent); }
-    .fighter-card .fc-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
-    .fighter-card .fc-name { font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem; color: var(--text); margin: 2px 0 8px; }
-    .hp-bar-bg { background: #2a2a3e; border-radius: 4px; height: 10px; overflow: hidden; }
-    .hp-bar { height: 100%; border-radius: 4px; transition: width 0.4s ease, background 0.4s; }
-    .hp-text { font-size: 0.72rem; color: var(--muted); margin-top: 3px; text-align: right; }
-
-    .turn-status {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 10px 16px;
-      text-align: center;
-      font-size: 0.85rem;
-      color: var(--accent);
-      font-weight: 600;
+    /* Field */
+    .battle-field {
+      display: flex; gap: 20px; align-items: stretch; flex: 1;
     }
 
-    .move-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .field-side {
+      flex: 1; display: flex; flex-direction: column; gap: 8px;
+    }
+    .field-side-label {
+      font-size: .65rem; text-transform: uppercase; letter-spacing: .12em;
+      color: var(--muted); text-align: center; margin-bottom: 2px;
+    }
+
+    /* The 6-slot grid per side: 2 cols x 3 rows */
+    .field-grid {
+      flex: 1; display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    .field-slot {
+      border-radius: 10px; border: 2px solid var(--border);
+      background: var(--sidebar); padding: 10px;
+      display: flex; flex-direction: column; justify-content: center;
+      align-items: center; text-align: center; gap: 4px;
+      transition: border-color .2s;
+      min-height: 80px;
+    }
+    .field-slot.occupied-az { border-color: var(--az-color); background: rgba(224,92,42,.1); }
+    .field-slot.occupied-sz { border-color: var(--sz-color); background: rgba(30,136,229,.1); }
+    .field-slot.empty { opacity: .3; }
+
+    .fs-zone-tag {
+      font-size: .55rem; text-transform: uppercase; letter-spacing: .08em;
+      padding: 1px 6px; border-radius: 8px; font-weight: 700;
+    }
+    .fs-zone-tag.az { background: var(--az-color); color: #fff; }
+    .fs-zone-tag.sz { background: var(--sz-color); color: #fff; }
+
+    .fs-name { font-size: .82rem; font-weight: 600; color: var(--text); line-height: 1.2; }
+    .fs-hp-bar-bg { width: 100%; background: #2a2a3e; border-radius: 3px; height: 6px; overflow: hidden; }
+    .fs-hp-bar { height: 100%; border-radius: 3px; transition: width .4s, background .4s; }
+    .fs-lp { font-size: .65rem; color: var(--muted); }
+    .fs-stats { font-size: .6rem; color: var(--muted); }
+
+    .field-divider {
+      width: 2px; background: var(--border); border-radius: 2px;
+      flex-shrink: 0; align-self: stretch;
+    }
+
+    /* Turn / status bar */
+    .turn-bar {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+      padding: 8px 16px; text-align: center; font-size: .85rem;
+      color: var(--accent); font-weight: 600; flex-shrink: 0;
+    }
+
+    /* Move buttons */
+    .move-area { display: flex; gap: 10px; flex-shrink: 0; }
     .move-btn {
-      padding: 12px;
-      background: var(--sidebar);
-      border: 2px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-size: 0.88rem;
-      font-family: 'Inter', sans-serif;
-      font-weight: 600;
-      cursor: pointer;
-      transition: border-color 0.15s, background 0.15s;
-      text-align: left;
+      flex: 1; padding: 12px; background: var(--sidebar);
+      border: 2px solid var(--border); border-radius: 8px;
+      color: var(--text); font-size: .85rem; font-family: 'Inter', sans-serif;
+      font-weight: 600; cursor: pointer; transition: all .15s; text-align: left;
     }
     .move-btn:hover:not(:disabled) { border-color: var(--accent); background: var(--panel); }
-    .move-btn:disabled { opacity: 0.4; cursor: default; }
-    .move-btn .move-sub { font-size: 0.7rem; color: var(--muted); margin-top: 2px; }
+    .move-btn:disabled { opacity: .4; cursor: default; }
+    .move-sub { font-size: .68rem; color: var(--muted); margin-top: 2px; }
 
+    /* Battle log */
     .battle-log {
-      background: var(--sidebar);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px 14px;
-      height: 130px;
-      overflow-y: auto;
-      font-size: 0.8rem;
-      line-height: 1.65;
-      flex-shrink: 0;
+      background: var(--sidebar); border: 1px solid var(--border);
+      border-radius: 8px; padding: 10px 14px;
+      height: 110px; overflow-y: auto; font-size: .78rem;
+      line-height: 1.65; flex-shrink: 0;
     }
+    .battle-log::-webkit-scrollbar { width: 3px; }
+    .battle-log::-webkit-scrollbar-thumb { background: var(--border); }
     .battle-log p { margin-bottom: 1px; }
     .battle-log p.you { color: var(--accent); }
     .battle-log p.opp { color: #7ecfef; }
+    .battle-log p.sys { color: var(--muted); font-style: italic; }
 
-    /* ── SPINNER ── */
-    .spinner {
-      width: 44px; height: 44px;
-      border: 4px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 20px auto;
-    }
+    /* Spinner */
+    .spinner { width: 44px; height: 44px; border: 4px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── TEAM NAME MODAL ── */
-    #save-team-modal { z-index: 1100; }
-
-    /* scrollbar */
     .content::-webkit-scrollbar { width: 4px; }
     .content::-webkit-scrollbar-thumb { background: var(--border); }
   </style>
 </head>
 <body>
 
-<!-- ══ USERNAME MODAL ══ -->
+<!-- USERNAME MODAL -->
 <div class="modal-overlay" id="username-modal">
   <div class="modal">
     <h2>Welcome, Trainer!</h2>
-    <p>Enter a username to get started. Add a password if you want to reserve your name for the online ladder — or just play as a guest.</p>
-    <input type="text" id="username-input" placeholder="Username…" maxlength="20" />
-    <input type="password" id="password-input" placeholder="Password (optional — leave blank for guest)" />
+    <p>Enter a username to get started. A password reserves your name for the online ladder — or just play as a guest.</p>
+    <input type="text" id="username-input" placeholder="Username…" maxlength="20"/>
+    <input type="password" id="password-input" placeholder="Password (optional)"/>
     <div class="modal-actions">
       <button class="btn-primary" style="flex:1" onclick="saveUsername()">Let's Go!</button>
     </div>
   </div>
 </div>
 
-<!-- ══ SAVE TEAM MODAL ══ -->
+<!-- SAVE TEAM MODAL -->
 <div class="modal-overlay hidden" id="save-team-modal">
   <div class="modal">
     <h2>Name Your Team</h2>
     <p>Give your team a name so you can find it later.</p>
-    <input type="text" id="team-name-input" placeholder="Team name…" maxlength="30" />
+    <input type="text" id="team-name-input" placeholder="Team name…" maxlength="30"/>
     <div class="modal-actions">
       <button class="btn-secondary" style="flex:1" onclick="closeSaveTeamModal()">Cancel</button>
       <button class="btn-primary" style="flex:1" onclick="confirmSaveTeam()">Save</button>
@@ -606,22 +387,22 @@
   </div>
 </div>
 
-<!-- ══ CHAT MODAL ══ -->
+<!-- CHAT MODAL -->
 <div class="modal-overlay hidden" id="chat-modal">
   <div class="modal">
     <h2>Chat</h2>
     <p>Enter the username of the trainer you want to reach.</p>
-    <div class="chat-input-row">
-      <input type="text" id="chat-target-input" placeholder="Trainer username…" maxlength="20" />
+    <input type="text" id="chat-target-input" placeholder="Trainer username…" maxlength="20"/>
+    <div style="margin-top:8px;padding:12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;font-size:.82rem;color:var(--muted);font-style:italic">
+      💬 Chat functionality is coming soon!
     </div>
-    <div class="coming-soon">💬 Chat functionality is coming soon!</div>
     <div class="modal-actions" style="margin-top:14px">
       <button class="btn-primary" style="flex:1" onclick="closeChatModal()">Close</button>
     </div>
   </div>
 </div>
 
-<!-- ══ TOPBAR ══ -->
+<!-- TOPBAR -->
 <div class="topbar">
   <div class="topbar-logo">Fossil Fighter <span>Showdown</span></div>
   <div class="topbar-user">
@@ -630,136 +411,194 @@
   </div>
 </div>
 
-<!-- ══ MAIN ══ -->
+<!-- MAIN -->
 <div class="main">
-
-  <!-- SIDEBAR -->
   <div class="sidebar">
-    <button class="sidebar-btn active" id="nav-home" onclick="showPanel('home')">
-      <span class="icon">🏠</span> Home
-    </button>
-    <button class="sidebar-btn" id="nav-battle" onclick="showPanel('battle')">
-      <span class="icon">⚔️</span> Battle
-    </button>
-    <button class="sidebar-btn" id="nav-teambuilder" onclick="showPanel('teambuilder')">
-      <span class="icon">🦕</span> Team Builder
-    </button>
+    <button class="sidebar-btn active" id="nav-home" onclick="showPanel('home')"><span class="icon">🏠</span> Home</button>
+    <button class="sidebar-btn" id="nav-battle" onclick="showPanel('battle')"><span class="icon">⚔️</span> Battle</button>
+    <button class="sidebar-btn" id="nav-teambuilder" onclick="showPanel('teambuilder')"><span class="icon">🦕</span> Team Builder</button>
     <div class="sidebar-divider"></div>
-    <button class="sidebar-btn" id="nav-chat" onclick="openChatModal()">
-      <span class="icon">💬</span> Chat
-    </button>
+    <button class="sidebar-btn" onclick="openChatModal()"><span class="icon">💬</span> Chat</button>
   </div>
 
-  <!-- CONTENT -->
   <div class="content">
 
-    <!-- HOME PANEL -->
+    <!-- HOME -->
     <div class="panel active" id="panel-home">
       <div class="home-welcome">
         <h1>Fossil Fighter <span>Showdown</span></h1>
-        <p>
-          Hi! Thank you for your interest in visiting this website. I am currently in the process
-          of building out this battle simulator based on Fossil Fighters Champions. I hope you enjoy
-          what's here so far — and stay tuned as more features are added!
-        </p>
+        <p>Hi! Thank you for your interest in visiting this website. I am currently in the process of building out this battle simulator based on Fossil Fighters Champions. I hope you enjoy what's here so far — and stay tuned as more features are added!</p>
         <div class="home-badge">🦴 Beta — More Coming Soon</div>
       </div>
     </div>
 
-    <!-- BATTLE PANEL -->
+    <!-- BATTLE NAV -->
     <div class="panel" id="panel-battle">
-      <div class="battle-panel">
+      <div class="battle-nav-panel">
         <div class="panel-title">⚔️ Battle</div>
-        <div class="battle-status">
-          <p id="battle-info-text">Ready to fight? Make sure you have an active team set in Team Builder first.</p>
-        </div>
-        <div class="active-team-preview" id="active-team-preview">
+        <p style="color:var(--muted);font-size:.88rem;margin-bottom:16px">Make sure you have an active team set in Team Builder. You'll pick your formation of 3 once you find an opponent.</p>
+        <div class="active-team-preview">
           <div class="atp-title">Active Team</div>
-          <div class="atp-members" id="atp-members-list">
-            <div style="color:var(--muted);font-size:0.82rem;font-style:italic">No active team selected. Go to Team Builder!</div>
-          </div>
+          <div id="atp-members-list"><div style="color:var(--muted);font-size:.82rem;font-style:italic">No active team selected.</div></div>
         </div>
         <div id="battle-waiting" style="display:none;text-align:center">
           <div class="spinner"></div>
-          <p style="color:var(--muted);font-size:0.85rem">Searching for an opponent…<br><small>Open this page in another tab to test!</small></p>
+          <p style="color:var(--muted);font-size:.85rem">Searching for an opponent…<br><small>Open this page in another tab to test!</small></p>
         </div>
-        <div style="display:flex;gap:10px;flex-direction:column" id="battle-btn-area">
-          <button class="btn-primary" id="battle-go-btn" onclick="startBattle()">Find Opponent</button>
+        <div id="battle-btn-area">
+          <button class="btn-primary" id="battle-go-btn" onclick="startSearch()">Find Opponent</button>
         </div>
       </div>
     </div>
 
-    <!-- TEAM BUILDER PANEL -->
+    <!-- TEAM BUILDER -->
     <div class="panel" id="panel-teambuilder">
       <div class="tb-layout">
-        <!-- LEFT: vivosaur browser -->
         <div class="tb-left">
           <div class="panel-title">🦕 Team Builder</div>
           <div class="search-bar">
-            <input type="text" id="vivo-search" placeholder="Search vivosaurs…" oninput="filterVivos()" />
+            <input type="text" id="vivo-search" placeholder="Search vivosaurs…" oninput="renderVivoGrid()"/>
           </div>
           <div class="filter-row" id="type-filters">
-            <button class="filter-btn active" data-type="all" onclick="setTypeFilter('all', this)">All</button>
-            <button class="filter-btn type-fire" data-type="Fire" onclick="setTypeFilter('Fire', this)">🔥 Fire</button>
-            <button class="filter-btn type-air" data-type="Air" onclick="setTypeFilter('Air', this)">🌬️ Air</button>
-            <button class="filter-btn type-earth" data-type="Earth" onclick="setTypeFilter('Earth', this)">🌿 Earth</button>
-            <button class="filter-btn type-water" data-type="Water" onclick="setTypeFilter('Water', this)">💧 Water</button>
-            <button class="filter-btn type-neutral" data-type="Neutral" onclick="setTypeFilter('Neutral', this)">⚪ Neutral</button>
-            <button class="filter-btn type-legendary" data-type="Legendary" onclick="setTypeFilter('Legendary', this)">⭐ Legendary</button>
+            <button class="filter-btn active" onclick="setTypeFilter('all',this)">All</button>
+            <button class="filter-btn" onclick="setTypeFilter('Fire',this)">🔥 Fire</button>
+            <button class="filter-btn" onclick="setTypeFilter('Air',this)">🌬️ Air</button>
+            <button class="filter-btn" onclick="setTypeFilter('Earth',this)">🌿 Earth</button>
+            <button class="filter-btn" onclick="setTypeFilter('Water',this)">💧 Water</button>
+            <button class="filter-btn" onclick="setTypeFilter('Neutral',this)">⚪ Neutral</button>
+            <button class="filter-btn" onclick="setTypeFilter('Legendary',this)">⭐ Legendary</button>
           </div>
           <div class="vivo-grid" id="vivo-grid"></div>
         </div>
-
-        <!-- RIGHT: current team + saved teams -->
         <div class="tb-right">
           <div>
             <div class="panel-title" style="font-size:1.1rem">Current Team</div>
-            <p style="font-size:0.75rem;color:var(--muted);margin-bottom:10px">Click vivosaurs on the left to add (max 5).</p>
+            <p style="font-size:.75rem;color:var(--muted);margin-bottom:10px">Select up to 5 vivosaurs. You'll choose 3 per battle.</p>
             <div class="team-slots" id="team-slots"></div>
           </div>
-
           <div class="team-actions">
-            <button class="btn-primary" id="save-team-btn" onclick="openSaveTeamModal()">Save Team</button>
+            <button class="btn-primary" id="save-team-btn" onclick="openSaveTeamModal()" disabled>Save Team</button>
             <button class="btn-secondary" onclick="clearCurrentTeam()">Clear</button>
           </div>
-
           <div style="margin-top:4px">
             <div class="tb-section-title">Saved Teams</div>
             <div class="saved-teams" id="saved-teams-list"></div>
-            <p id="no-teams-msg" style="font-size:0.78rem;color:var(--muted);font-style:italic">No saved teams yet.</p>
+            <p id="no-teams-msg" style="font-size:.78rem;color:var(--muted);font-style:italic">No saved teams yet.</p>
           </div>
         </div>
       </div>
     </div>
 
-  </div><!-- /content -->
-</div><!-- /main -->
-
-<!-- ══ BATTLE SCREEN (full overlay) ══ -->
-<div id="battle-screen">
-  <div class="battle-topbar">
-    <span>⚔️ Battle vs <strong id="battle-opponent-name">???</strong></span>
-    <span class="btb-right" style="font-size:0.78rem;color:var(--muted)">Fossil Fighter Showdown</span>
   </div>
-  <div class="battle-main">
-    <div class="fighters">
-      <div class="fighter-card you">
-        <div class="fc-label">You</div>
-        <div class="fc-name" id="your-vivo-name">—</div>
-        <div class="hp-bar-bg"><div class="hp-bar" id="your-hp-bar" style="width:100%;background:var(--hp-green)"></div></div>
-        <div class="hp-text"><span id="your-hp">—</span> LP</div>
+</div>
+
+<!-- ══════════════════════════════════════
+     FORMATION SCREEN
+══════════════════════════════════════ -->
+<div id="formation-screen">
+  <div class="formation-topbar">
+    <div class="ftb-title">Formation Select</div>
+    <div class="ftb-vs">vs <strong id="fs-opponent-name">???</strong></div>
+    <div class="formation-timer-wrap">
+      <span style="font-size:.75rem;color:var(--muted)">Time remaining</span>
+      <div class="formation-timer" id="fs-timer">75</div>
+    </div>
+  </div>
+
+  <div class="formation-body">
+    <div class="formation-instructions">
+      <strong>Drag to reorder</strong> your vivosaurs. The leftmost 3 enter battle — the right 2 sit out (green).<br>
+      Use the buttons on the left to choose your starting formation.
+    </div>
+
+    <div class="formation-row">
+      <!-- Formation toggle -->
+      <div class="formation-toggle">
+        <!-- Top: 1 AZ, 2 SZ (blue) -->
+        <button class="ftoggle-btn active-sz" id="ftoggle-sz" onclick="setFormationType('sz')" title="1 in Attack Zone, 2 in Support Zone">
+          <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+            <!-- Triangle point-forward: AZ top, SZ bottom-left + bottom-right -->
+            <circle cx="20" cy="8"  r="7" fill="#e05c2a" opacity="0.9"/>
+            <circle cx="8"  cy="30" r="7" fill="#1e88e5" opacity="0.9"/>
+            <circle cx="32" cy="30" r="7" fill="#1e88e5" opacity="0.9"/>
+            <line x1="20" y1="15" x2="8"  y2="23" stroke="#444" stroke-width="1.5"/>
+            <line x1="20" y1="15" x2="32" y2="23" stroke="#444" stroke-width="1.5"/>
+          </svg>
+        </button>
+        <!-- Bottom: 2 AZ, 1 SZ (red) -->
+        <button class="ftoggle-btn" id="ftoggle-az" onclick="setFormationType('az')" title="2 in Attack Zone, 1 in Support Zone">
+          <svg viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+            <!-- Triangle wide-forward: AZ bottom-left + bottom-right, SZ top -->
+            <circle cx="8"  cy="10" r="7" fill="#e05c2a" opacity="0.9"/>
+            <circle cx="32" cy="10" r="7" fill="#e05c2a" opacity="0.9"/>
+            <circle cx="20" cy="32" r="7" fill="#1e88e5" opacity="0.9"/>
+            <line x1="8"  y1="17" x2="20" y2="25" stroke="#444" stroke-width="1.5"/>
+            <line x1="32" y1="17" x2="20" y2="25" stroke="#444" stroke-width="1.5"/>
+          </svg>
+        </button>
       </div>
-      <div class="fighter-card">
-        <div class="fc-label">Opponent</div>
-        <div class="fc-name" id="opp-vivo-name">—</div>
-        <div class="hp-bar-bg"><div class="hp-bar" id="opp-hp-bar" style="width:100%;background:var(--hp-green)"></div></div>
-        <div class="hp-text"><span id="opp-hp">—</span> LP</div>
+
+      <!-- Vivosaur lineup -->
+      <div class="vivo-lineup" id="vivo-lineup">
+        <!-- filled by JS -->
       </div>
     </div>
 
-    <div class="turn-status" id="turn-status">Waiting for opponent…</div>
+    <div class="formation-ready-area">
+      <button class="btn-ready" id="ready-btn" onclick="lockFormation()">Ready!</button>
+      <div class="waiting-for-opp hidden" id="waiting-for-opp-msg">Waiting for opponent…</div>
+    </div>
+  </div>
+</div>
 
-    <div class="move-grid" id="move-grid">
+<!-- ══════════════════════════════════════
+     BATTLE SCREEN
+══════════════════════════════════════ -->
+<div id="battle-screen">
+  <div class="battle-topbar">
+    <span>⚔️ vs <strong id="b-opponent-name">???</strong></span>
+    <span style="margin-left:auto;font-size:.75rem;color:var(--muted)">Fossil Fighter Showdown</span>
+  </div>
+
+  <div class="battle-body">
+    <!-- Field -->
+    <div class="battle-field">
+
+      <!-- YOUR SIDE (left) -->
+      <div class="field-side">
+        <div class="field-side-label">Your Side</div>
+        <div class="field-grid" id="your-field-grid">
+          <!-- 6 slots: pos 1-6, cols = SZ(left) | AZ(right) -->
+          <div class="field-slot empty" id="your-slot-1" data-pos="1"></div>
+          <div class="field-slot empty" id="your-slot-2" data-pos="2"></div>
+          <div class="field-slot empty" id="your-slot-3" data-pos="3"></div>
+          <div class="field-slot empty" id="your-slot-4" data-pos="4"></div>
+          <div class="field-slot empty" id="your-slot-5" data-pos="5"></div>
+          <div class="field-slot empty" id="your-slot-6" data-pos="6"></div>
+        </div>
+      </div>
+
+      <div class="field-divider"></div>
+
+      <!-- OPPONENT SIDE (right, mirrored) -->
+      <div class="field-side">
+        <div class="field-side-label">Opponent</div>
+        <div class="field-grid" id="opp-field-grid">
+          <div class="field-slot empty" id="opp-slot-1" data-pos="1"></div>
+          <div class="field-slot empty" id="opp-slot-2" data-pos="2"></div>
+          <div class="field-slot empty" id="opp-slot-3" data-pos="3"></div>
+          <div class="field-slot empty" id="opp-slot-4" data-pos="4"></div>
+          <div class="field-slot empty" id="opp-slot-5" data-pos="5"></div>
+          <div class="field-slot empty" id="opp-slot-6" data-pos="6"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Turn status -->
+    <div class="turn-bar" id="turn-bar">Waiting…</div>
+
+    <!-- Moves -->
+    <div class="move-area" id="move-area">
       <button class="move-btn" disabled onclick="sendMove('Fossil Cannon')">
         Fossil Cannon<div class="move-sub">⚡ Power 50 · Normal</div>
       </button>
@@ -774,35 +613,48 @@
       </button>
     </div>
 
+    <!-- Log -->
     <div class="battle-log" id="battle-log">
-      <p>Battle started! Good luck, Trainer.</p>
+      <p class="sys">Battle log will appear here.</p>
     </div>
   </div>
 </div>
 
 <script>
-// ══════════════════════════════════════════════
-//  VIVOSAUR DATA
-// ══════════════════════════════════════════════
+// ════════════════════════════════════════
+//  VIVOSAUR DATA (from Excel)
+// ════════════════════════════════════════
 const VIVOSAURS = [{"name": "T-Rex", "number": 1, "type": "Fire", "class": "Close-Range", "lp": 600, "atk": 99, "def": 50, "acc": 43, "spd": 12, "crit": 0.15, "support_target": "Own AZ", "atk_mod": -0.3, "def_mod": -0.3, "acc_mod": -0.3, "spd_mod": -0.3}, {"name": "T-Rex Lord", "number": 1, "type": "Fire", "class": "Close-Range", "lp": 700, "atk": 99, "def": 50, "acc": 40, "spd": 9, "crit": 0.3, "support_target": "Own AZ", "atk_mod": -0.4, "def_mod": -0.4, "acc_mod": -0.4, "spd_mod": -0.4}, {"name": "Daspleto", "number": 2, "type": "Earth", "class": "Close-Range", "lp": 540, "atk": 85, "def": 52, "acc": 44, "spd": 12, "crit": 0.15, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": -0.1, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Gorgo", "number": 3, "type": "Fire", "class": "Close-Range", "lp": 480, "atk": 83, "def": 36, "acc": 48, "spd": 15, "crit": 0.15, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": -0.1, "spd_mod": 0.0}, {"name": "Tarbo", "number": 4, "type": "Air", "class": "Close-Range", "lp": 540, "atk": 85, "def": 40, "acc": 46, "spd": 13, "crit": 0.15, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": -0.1}, {"name": "Alio", "number": 5, "type": "Water", "class": "Close-Range", "lp": 420, "atk": 76, "def": 32, "acc": 50, "spd": 14, "crit": 0.2, "support_target": "nan", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Siamo", "number": 6, "type": "Fire", "class": "Close-Range", "lp": 440, "atk": 76, "def": 32, "acc": 50, "spd": 14, "crit": 0.2, "support_target": "nan", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Alectro", "number": 7, "type": "Water", "class": "Close-Range", "lp": 420, "atk": 72, "def": 32, "acc": 50, "spd": 14, "crit": 0.2, "support_target": "nan", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Guan", "number": 8, "type": "Fire", "class": "Close-Range", "lp": 340, "atk": 59, "def": 14, "acc": 50, "spd": 20, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.9, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Shanshan", "number": 9, "type": "Air", "class": "Close-Range", "lp": 280, "atk": 61, "def": 29, "acc": 50, "spd": 19, "crit": 0.4, "support_target": "Own AZ", "atk_mod": 0.05, "def_mod": 0.05, "acc_mod": 0.05, "spd_mod": 0.05}, {"name": "Allo", "number": 10, "type": "Neutral", "class": "Close-Range", "lp": 580, "atk": 88, "def": 45, "acc": 48, "spd": 12, "crit": 0.15, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.4}, {"name": "Giga Allo", "number": 10, "type": "Neutral", "class": "Close-Range", "lp": 600, "atk": 98, "def": 47, "acc": 50, "spd": 11, "crit": 0.25, "support_target": "Own AZ", "atk_mod": 0.6, "def_mod": -0.3, "acc_mod": -0.3, "spd_mod": -0.3}, {"name": "Metria", "number": 11, "type": "Air", "class": "Close-Range", "lp": 440, "atk": 72, "def": 36, "acc": 50, "spd": 14, "crit": 0.15, "support_target": "Own AZ", "atk_mod": 0.08, "def_mod": 0.08, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Megalo", "number": 12, "type": "Neutral", "class": "Close-Range", "lp": 460, "atk": 70, "def": 36, "acc": 50, "spd": 14, "crit": 0.15, "support_target": "Enemy AZ", "atk_mod": -0.05, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": -0.05}, {"name": "Venator", "number": 13, "type": "Earth", "class": "Close-Range", "lp": 480, "atk": 72, "def": 36, "acc": 48, "spd": 18, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.1, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.1}, {"name": "S-Raptor", "number": 14, "type": "Fire", "class": "Close-Range", "lp": 440, "atk": 67, "def": 32, "acc": 50, "spd": 14, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.2, "acc_mod": 0.2, "spd_mod": 0.0}, {"name": "Giganto", "number": 15, "type": "Fire", "class": "Close-Range", "lp": 560, "atk": 90, "def": 43, "acc": 42, "spd": 10, "crit": 0.15, "support_target": "Own AZ", "atk_mod": -0.2, "def_mod": -0.2, "acc_mod": -0.2, "spd_mod": -0.2}, {"name": "Cryo", "number": 16, "type": "Water", "class": "Close-Range", "lp": 440, "atk": 70, "def": 36, "acc": 48, "spd": 14, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.3, "acc_mod": 0.3, "spd_mod": 0.0}, {"name": "Carchar", "number": 17, "type": "Earth", "class": "Close-Range", "lp": 540, "atk": 88, "def": 41, "acc": 45, "spd": 11, "crit": 0.15, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": -0.1, "acc_mod": 0.0, "spd_mod": -0.1}, {"name": "Acro", "number": 18, "type": "Earth", "class": "Close-Range", "lp": 540, "atk": 79, "def": 38, "acc": 48, "spd": 12, "crit": 0.15, "support_target": "Own AZ", "atk_mod": 0.1, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "F-Raptor", "number": 19, "type": "Earth", "class": "Close-Range", "lp": 440, "atk": 72, "def": 32, "acc": 50, "spd": 15, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.05, "def_mod": 0.05, "acc_mod": 0.05, "spd_mod": 0.05}, {"name": "Spinax", "number": 20, "type": "Air", "class": "Close-Range", "lp": 480, "atk": 72, "def": 36, "acc": 48, "spd": 14, "crit": 0.15, "support_target": "Own AZ", "atk_mod": 0.05, "def_mod": 0.05, "acc_mod": 0.05, "spd_mod": 0.0}, {"name": "Giga Spinax", "number": 20, "type": "Air", "class": "Close-Range", "lp": 560, "atk": 89, "def": 42, "acc": 49, "spd": 10, "crit": 0.25, "support_target": "Own AZ", "atk_mod": 0.5, "def_mod": -0.25, "acc_mod": -0.25, "spd_mod": -0.25}, {"name": "Neo", "number": 21, "type": "Neutral", "class": "Close-Range", "lp": 440, "atk": 70, "def": 36, "acc": 50, "spd": 14, "crit": 0.2, "support_target": "nan", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Compso", "number": 22, "type": "Earth", "class": "Mid-Range", "lp": 220, "atk": 41, "def": 11, "acc": 50, "spd": 25, "crit": 0.4, "support_target": "Enemy AZ", "atk_mod": -0.9, "def_mod": -0.9, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Sopteryx", "number": 23, "type": "Fire", "class": "Mid-Range", "lp": 240, "atk": 41, "def": 11, "acc": 50, "spd": 25, "crit": 0.4, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.9}, {"name": "Delta", "number": 24, "type": "Water", "class": "Close-Range", "lp": 440, "atk": 59, "def": 14, "acc": 50, "spd": 20, "crit": 0.2, "support_target": "nan", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Tro", "number": 25, "type": "Neutral", "class": "Close-Range", "lp": 280, "atk": 52, "def": 18, "acc": 50, "spd": 25, "crit": 0.4, "support_target": "Own AZ", "atk_mod": 0.4, "def_mod": 0.4, "acc_mod": 0.4, "spd_mod": 0.4}, {"name": "Nychus", "number": 26, "type": "Fire", "class": "Close-Range", "lp": 300, "atk": 59, "def": 20, "acc": 50, "spd": 21, "crit": 0.2, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": -0.99, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "M-Raptor", "number": 27, "type": "Air", "class": "Mid-Range", "lp": 240, "atk": 41, "def": 18, "acc": 50, "spd": 25, "crit": 0.4, "support_target": "Own AZ", "atk_mod": 0.35, "def_mod": 0.15, "acc_mod": 0.25, "spd_mod": 0.25}, {"name": "U-Raptor", "number": 28, "type": "Fire", "class": "Close-Range", "lp": 440, "atk": 68, "def": 22, "acc": 50, "spd": 21, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.05, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "V-Raptor", "number": 29, "type": "Air", "class": "Close-Range", "lp": 280, "atk": 52, "def": 18, "acc": 50, "spd": 25, "crit": 0.4, "support_target": "nan", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "V-Ripper", "number": 29, "type": "Air", "class": "Close-Range", "lp": 600, "atk": 72, "def": 25, "acc": 49, "spd": 30, "crit": 0.4, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": -0.7, "acc_mod": 0.3, "spd_mod": -0.15}, {"name": "Breme", "number": 30, "type": "Fire", "class": "Close-Range", "lp": 300, "atk": 54, "def": 18, "acc": 50, "spd": 21, "crit": 0.2, "support_target": "nan", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Aopteryx", "number": 31, "type": "Neutral", "class": "Close-Range", "lp": 200, "atk": 41, "def": 5, "acc": 50, "spd": 25, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.1, "def_mod": 0.1, "acc_mod": 0.1, "spd_mod": 0.1}, {"name": "Coelo", "number": 32, "type": "Air", "class": "Mid-Range", "lp": 260, "atk": 52, "def": 11, "acc": 50, "spd": 21, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.3, "def_mod": 0.1, "acc_mod": 0.2, "spd_mod": 0.2}, {"name": "Dilopho", "number": 33, "type": "Water", "class": "Close-Range", "lp": 360, "atk": 65, "def": 11, "acc": 50, "spd": 21, "crit": 0.2, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": -0.99, "spd_mod": 0.0}, {"name": "Spino", "number": 34, "type": "Water", "class": "Close-Range", "lp": 560, "atk": 80, "def": 25, "acc": 46, "spd": 19, "crit": 0.15, "support_target": "Own AZ", "atk_mod": -0.15, "def_mod": -0.15, "acc_mod": -0.15, "spd_mod": -0.15}, {"name": "Despino", "number": 34, "type": "Water", "class": "Close-Range", "lp": 620, "atk": 86, "def": 30, "acc": 43, "spd": 28, "crit": 0.35, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": -0.6, "acc_mod": 0.2, "spd_mod": -0.1}, {"name": "Angato", "number": 35, "type": "Water", "class": "Close-Range", "lp": 440, "atk": 70, "def": 22, "acc": 50, "spd": 20, "crit": 0.15, "support_target": "nan", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Sucho", "number": 36, "type": "Water", "class": "Close-Range", "lp": 520, "atk": 75, "def": 25, "acc": 47, "spd": 21, "crit": 0.15, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": -0.1, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Onyx", "number": 37, "type": "Water", "class": "Close-Range", "lp": 460, "atk": 77, "def": 23, "acc": 50, "spd": 20, "crit": 0.15, "support_target": "nan", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Cerato", "number": 38, "type": "Air", "class": "Close-Range", "lp": 420, "atk": 65, "def": 31, "acc": 50, "spd": 20, "crit": 0.4, "support_target": "Own AZ", "atk_mod": 0.2, "def_mod": -0.1, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Carno", "number": 39, "type": "Earth", "class": "Close-Range", "lp": 440, "atk": 70, "def": 32, "acc": 49, "spd": 20, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.1, "def_mod": -0.1, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Orno", "number": 40, "type": "Neutral", "class": "Mid-Range", "lp": 260, "atk": 52, "def": 18, "acc": 35, "spd": 25, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.99, "spd_mod": 0.0}, {"name": "Cheirus", "number": 41, "type": "Air", "class": "Mid-Range", "lp": 440, "atk": 72, "def": 22, "acc": 35, "spd": 25, "crit": 0.2, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": -0.99}, {"name": "O-Raptor", "number": 42, "type": "Neutral", "class": "Mid-Range", "lp": 260, "atk": 47, "def": 18, "acc": 50, "spd": 24, "crit": 0.2, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": -0.2, "spd_mod": -0.2}, {"name": "O-Raptor Fiend", "number": 42, "type": "Neutral", "class": "Mid-Range", "lp": 660, "atk": 90, "def": 57, "acc": 48, "spd": 13, "crit": 0.3, "support_target": "Own AZ", "atk_mod": -0.3, "def_mod": -0.3, "acc_mod": -0.3, "spd_mod": -0.3}, {"name": "Zino", "number": 43, "type": "Fire", "class": "Close-Range", "lp": 460, "atk": 70, "def": 31, "acc": 6, "spd": 10, "crit": 1.0, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.2, "spd_mod": 0.2}, {"name": "Brachio", "number": 44, "type": "Neutral", "class": "Long-Range", "lp": 660, "atk": 65, "def": 27, "acc": 44, "spd": 10, "crit": 0.15, "support_target": "nan", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Ryden", "number": 44, "type": "Neutral", "class": "Long-Range", "lp": 720, "atk": 76, "def": 30, "acc": 44, "spd": 9, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.1, "def_mod": 0.0, "acc_mod": 0.1, "spd_mod": 0.0}, {"name": "Salto", "number": 45, "type": "Earth", "class": "Long-Range", "lp": 560, "atk": 61, "def": 36, "acc": 47, "spd": 16, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.1, "spd_mod": 0.0}, {"name": "Shuno", "number": 46, "type": "Fire", "class": "Long-Range", "lp": 580, "atk": 63, "def": 27, "acc": 47, "spd": 15, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.1}, {"name": "Perso", "number": 47, "type": "Earth", "class": "Long-Range", "lp": 720, "atk": 72, "def": 35, "acc": 38, "spd": 12, "crit": 0.15, "support_target": "Own AZ", "atk_mod": -0.1, "def_mod": 0.0, "acc_mod": -0.1, "spd_mod": 0.0}, {"name": "Seismo", "number": 48, "type": "Earth", "class": "Long-Range", "lp": 700, "atk": 75, "def": 29, "acc": 40, "spd": 10, "crit": 0.15, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": -0.1, "acc_mod": 0.0, "spd_mod": -0.1}, {"name": "Apato", "number": 49, "type": "Neutral", "class": "Long-Range", "lp": 680, "atk": 64, "def": 27, "acc": 45, "spd": 13, "crit": 0.15, "support_target": "nan", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Amargo", "number": 50, "type": "Fire", "class": "Long-Range", "lp": 500, "atk": 62, "def": 27, "acc": 48, "spd": 21, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.1, "def_mod": 0.1, "acc_mod": 0.0, "spd_mod": 0.05}, {"name": "Omias", "number": 50, "type": "Fire", "class": "Long-Range", "lp": 580, "atk": 79, "def": 30, "acc": 53, "spd": 28, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.2, "def_mod": 0.2, "acc_mod": -0.1, "spd_mod": -0.1}, {"name": "Stego", "number": 51, "type": "Air", "class": "Mid-Range", "lp": 500, "atk": 65, "def": 34, "acc": 45, "spd": 19, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.1, "def_mod": 0.1, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Barbaros", "number": 51, "type": "Air", "class": "Mid-Range", "lp": 640, "atk": 80, "def": 55, "acc": 40, "spd": 12, "crit": 0.15, "support_target": "Own AZ", "atk_mod": 0.25, "def_mod": 0.35, "acc_mod": -0.15, "spd_mod": -0.2}, {"name": "Yango", "number": 52, "type": "Fire", "class": "Mid-Range", "lp": 300, "atk": 61, "def": 29, "acc": 47, "spd": 22, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.4, "acc_mod": 0.0, "spd_mod": 0.1}, {"name": "Dydomio", "number": 52, "type": "Fire", "class": "Mid-Range", "lp": 580, "atk": 73, "def": 55, "acc": 48, "spd": 15, "crit": 0.15, "support_target": "Own AZ", "atk_mod": -0.15, "def_mod": 0.5, "acc_mod": -0.2, "spd_mod": 0.3}, {"name": "Jiango", "number": 53, "type": "Water", "class": "Mid-Range", "lp": 440, "atk": 67, "def": 29, "acc": 45, "spd": 20, "crit": 0.4, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": -0.1, "acc_mod": 0.05, "spd_mod": 0.05}, {"name": "Kentro", "number": 54, "type": "Air", "class": "Mid-Range", "lp": 360, "atk": 63, "def": 29, "acc": 46, "spd": 21, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.3, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Lexo", "number": 55, "type": "Earth", "class": "Mid-Range", "lp": 360, "atk": 59, "def": 29, "acc": 48, "spd": 21, "crit": 0.2, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": -0.2, "spd_mod": -0.1}, {"name": "Nodo", "number": 56, "type": "Air", "class": "Mid-Range", "lp": 400, "atk": 41, "def": 55, "acc": 38, "spd": 16, "crit": 0.15, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.9, "acc_mod": -0.1, "spd_mod": -0.1}, {"name": "Ankylo", "number": 57, "type": "Water", "class": "Mid-Range", "lp": 440, "atk": 65, "def": 50, "acc": 46, "spd": 18, "crit": 0.2, "support_target": "Own AZ", "atk_mod": -0.2, "def_mod": 0.99, "acc_mod": 0.0, "spd_mod": -0.1}, {"name": "Galgaron", "number": 57, "type": "Water", "class": "Mid-Range", "lp": 540, "atk": 70, "def": 53, "acc": 44, "spd": 10, "crit": 0.15, "support_target": "Own AZ", "atk_mod": -0.1, "def_mod": 0.99, "acc_mod": 0.0, "spd_mod": -0.1}, {"name": "Saichan", "number": 58, "type": "Fire", "class": "Mid-Range", "lp": 420, "atk": 67, "def": 43, "acc": 44, "spd": 17, "crit": 0.2, "support_target": "Own AZ", "atk_mod": -0.1, "def_mod": 0.8, "acc_mod": -0.1, "spd_mod": 0.0}, {"name": "Goyle", "number": 59, "type": "Air", "class": "Mid-Range", "lp": 260, "atk": 52, "def": 41, "acc": 45, "spd": 19, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.3, "def_mod": 0.0, "acc_mod": 0.2, "spd_mod": 0.0}, {"name": "Pelto", "number": 60, "type": "Earth", "class": "Mid-Range", "lp": 420, "atk": 67, "def": 43, "acc": 45, "spd": 18, "crit": 0.2, "support_target": "Enemy AZ", "atk_mod": -0.4, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Zanth", "number": 60, "type": "Earth", "class": "Mid-Range", "lp": 520, "atk": 75, "def": 49, "acc": 42, "spd": 11, "crit": 0.15, "support_target": "Enemy AZ", "atk_mod": -0.6, "def_mod": 0.2, "acc_mod": -0.6, "spd_mod": 0.2}, {"name": "Hypsi", "number": 61, "type": "Air", "class": "Mid-Range", "lp": 240, "atk": 36, "def": 13, "acc": 50, "spd": 25, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.3, "def_mod": 0.3, "acc_mod": 0.3, "spd_mod": 0.3}, {"name": "Nasaur", "number": 62, "type": "Water", "class": "Mid-Range", "lp": 260, "atk": 40, "def": 14, "acc": 50, "spd": 25, "crit": 0.2, "support_target": "Enemy AZ", "atk_mod": -0.15, "def_mod": -0.15, "acc_mod": -0.15, "spd_mod": -0.15}, {"name": "Igua", "number": 63, "type": "Air", "class": "Close-Range", "lp": 500, "atk": 65, "def": 32, "acc": 48, "spd": 30, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.07, "def_mod": 0.07, "acc_mod": 0.07, "spd_mod": 0.07}, {"name": "Hibigon", "number": 63, "type": "Air", "class": "Close-Range", "lp": 160, "atk": 68, "def": 12, "acc": 51, "spd": 17, "crit": 0.1, "support_target": "Own AZ", "atk_mod": 0.99, "def_mod": 0.0, "acc_mod": 0.99, "spd_mod": 0.0}, {"name": "Ourano", "number": 64, "type": "Earth", "class": "Close-Range", "lp": 460, "atk": 70, "def": 31, "acc": 48, "spd": 30, "crit": 0.2, "support_target": "Enemy AZ", "atk_mod": -0.07, "def_mod": -0.07, "acc_mod": -0.07, "spd_mod": -0.07}, {"name": "Lambeo", "number": 65, "type": "Fire", "class": "Close-Range", "lp": 620, "atk": 90, "def": 29, "acc": 47, "spd": 22, "crit": 0.15, "support_target": "Enemy AZ", "atk_mod": -0.1, "def_mod": -0.1, "acc_mod": -0.1, "spd_mod": -0.1}, {"name": "Maia", "number": 66, "type": "Fire", "class": "Mid-Range", "lp": 400, "atk": 59, "def": 29, "acc": 50, "spd": 25, "crit": 0.4, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.3, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Anato", "number": 67, "type": "Earth", "class": "Mid-Range", "lp": 500, "atk": 65, "def": 29, "acc": 46, "spd": 14, "crit": 0.4, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": -0.1, "spd_mod": -0.2}, {"name": "Papygon", "number": 67, "type": "Earth", "class": "Mid-Range", "lp": 540, "atk": 80, "def": 35, "acc": 50, "spd": 25, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.35, "def_mod": 0.25, "acc_mod": -0.1, "spd_mod": -0.2}, {"name": "Paraloph", "number": 68, "type": "Air", "class": "Close-Range", "lp": 500, "atk": 72, "def": 25, "acc": 50, "spd": 21, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.07, "def_mod": 0.07, "acc_mod": 0.07, "spd_mod": 0.07}, {"name": "Pachy", "number": 69, "type": "Earth", "class": "Mid-Range", "lp": 360, "atk": 47, "def": 25, "acc": 44, "spd": 21, "crit": 0.6, "support_target": "Enemy AZ", "atk_mod": -0.6, "def_mod": -0.4, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Stygi", "number": 70, "type": "Fire", "class": "Mid-Range", "lp": 280, "atk": 43, "def": 22, "acc": 45, "spd": 20, "crit": 0.6, "support_target": "Enemy AZ", "atk_mod": -0.4, "def_mod": 0.0, "acc_mod": -0.6, "spd_mod": 0.0}, {"name": "Goyo", "number": 71, "type": "Air", "class": "Mid-Range", "lp": 280, "atk": 40, "def": 25, "acc": 43, "spd": 22, "crit": 0.6, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": -0.6, "acc_mod": 0.0, "spd_mod": -0.4}, {"name": "Proto", "number": 72, "type": "Water", "class": "Close-Range", "lp": 220, "atk": 41, "def": 11, "acc": 40, "spd": 25, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.7, "acc_mod": 0.0, "spd_mod": 0.7}, {"name": "Tricera", "number": 73, "type": "Water", "class": "Mid-Range", "lp": 500, "atk": 72, "def": 36, "acc": 45, "spd": 21, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.4, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": -0.1}, {"name": "Heracles", "number": 73, "type": "Water", "class": "Mid-Range", "lp": 600, "atk": 93, "def": 38, "acc": 42, "spd": 11, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.6, "def_mod": -0.3, "acc_mod": 0.2, "spd_mod": -0.1}, {"name": "Styraco", "number": 74, "type": "Air", "class": "Mid-Range", "lp": 420, "atk": 63, "def": 32, "acc": 40, "spd": 22, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.5, "spd_mod": 0.25}, {"name": "Einio", "number": 75, "type": "Fire", "class": "Mid-Range", "lp": 420, "atk": 61, "def": 32, "acc": 41, "spd": 21, "crit": 0.2, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": -0.25, "spd_mod": -0.5}, {"name": "Centro", "number": 76, "type": "Earth", "class": "Mid-Range", "lp": 420, "atk": 65, "def": 32, "acc": 6, "spd": 21, "crit": 1.0, "support_target": "Own AZ", "atk_mod": 0.3, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": -0.1}, {"name": "Penta", "number": 77, "type": "Neutral", "class": "Mid-Range", "lp": 460, "atk": 70, "def": 32, "acc": 40, "spd": 23, "crit": 0.2, "support_target": "nan", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Pachrino", "number": 78, "type": "Earth", "class": "Mid-Range", "lp": 440, "atk": 67, "def": 32, "acc": 39, "spd": 20, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.4, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Buldor", "number": 78, "type": "Earth", "class": "Mid-Range", "lp": 580, "atk": 85, "def": 45, "acc": 45, "spd": 20, "crit": 0.15, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.99, "spd_mod": -0.99}, {"name": "Mihu", "number": 79, "type": "Neutral", "class": "Mid-Range", "lp": 440, "atk": 67, "def": 32, "acc": 60, "spd": 24, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.6, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Ptera", "number": 80, "type": "Air", "class": "Long-Range", "lp": 320, "atk": 43, "def": 11, "acc": 48, "spd": 27, "crit": 0.4, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": -0.6}, {"name": "Coatlus", "number": 81, "type": "Air", "class": "Long-Range", "lp": 360, "atk": 56, "def": 14, "acc": 46, "spd": 26, "crit": 0.2, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": -0.35}, {"name": "Jara", "number": 82, "type": "Neutral", "class": "Long-Range", "lp": 280, "atk": 31, "def": 11, "acc": 44, "spd": 29, "crit": 0.2, "support_target": "Enemy AZ", "atk_mod": -0.5, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": -0.5}, {"name": "Dimorph", "number": 83, "type": "Fire", "class": "Long-Range", "lp": 240, "atk": 47, "def": 11, "acc": 50, "spd": 29, "crit": 0.4, "support_target": "Enemy AZ", "atk_mod": -0.35, "def_mod": -0.35, "acc_mod": -0.35, "spd_mod": -0.35}, {"name": "Dimorph Ace", "number": 83, "type": "Fire", "class": "Long-Range", "lp": 460, "atk": 78, "def": 22, "acc": 55, "spd": 34, "crit": 0.15, "support_target": "Enemy AZ", "atk_mod": -0.25, "def_mod": -0.25, "acc_mod": -0.25, "spd_mod": -0.25}, {"name": "Guera", "number": 84, "type": "Neutral", "class": "Long-Range", "lp": 280, "atk": 31, "def": 11, "acc": 45, "spd": 28, "crit": 0.15, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": -0.5, "acc_mod": -0.5, "spd_mod": 0.0}, {"name": "Krona", "number": 85, "type": "Water", "class": "Long-Range", "lp": 620, "atk": 85, "def": 25, "acc": 36, "spd": 10, "crit": 0.15, "support_target": "nan", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Futabi", "number": 86, "type": "Water", "class": "Mid-Range", "lp": 440, "atk": 54, "def": 25, "acc": 45, "spd": 23, "crit": 0.2, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": -0.35, "acc_mod": -0.35, "spd_mod": 0.0}, {"name": "Momo", "number": 86, "type": "Water", "class": "Mid-Range", "lp": 360, "atk": 61, "def": 12, "acc": 52, "spd": 25, "crit": 0.1, "support_target": "Enemy AZ", "atk_mod": -0.45, "def_mod": -0.45, "acc_mod": -0.45, "spd_mod": -0.45}, {"name": "Elasmo", "number": 87, "type": "Water", "class": "Mid-Range", "lp": 520, "atk": 72, "def": 29, "acc": 40, "spd": 21, "crit": 0.15, "support_target": "Own AZ", "atk_mod": 0.2, "def_mod": 0.0, "acc_mod": 0.2, "spd_mod": 0.0}, {"name": "Kaishin", "number": 87, "type": "Water", "class": "Mid-Range", "lp": 620, "atk": 82, "def": 36, "acc": 45, "spd": 25, "crit": 0.15, "support_target": "Own AZ", "atk_mod": 0.4, "def_mod": -0.2, "acc_mod": 0.2, "spd_mod": -0.4}, {"name": "Plesio", "number": 88, "type": "Water", "class": "Mid-Range", "lp": 260, "atk": 41, "def": 25, "acc": 50, "spd": 25, "crit": 0.4, "support_target": "Own AZ", "atk_mod": 0.2, "def_mod": 0.2, "acc_mod": 0.2, "spd_mod": 0.0}, {"name": "Marple", "number": 88, "type": "Water", "class": "Mid-Range", "lp": 150, "atk": 54, "def": 11, "acc": 57, "spd": 15, "crit": 0.1, "support_target": "Own AZ", "atk_mod": 0.6, "def_mod": 0.6, "acc_mod": 0.6, "spd_mod": 0.6}, {"name": "Shoni", "number": 89, "type": "Water", "class": "Mid-Range", "lp": 640, "atk": 66, "def": 25, "acc": 35, "spd": 10, "crit": 0.15, "support_target": "Own AZ", "atk_mod": 0.05, "def_mod": 0.05, "acc_mod": 0.05, "spd_mod": 0.05}, {"name": "Arsith", "number": 90, "type": "Earth", "class": "Mid-Range", "lp": 300, "atk": 55, "def": 39, "acc": 42, "spd": 22, "crit": 0.3, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.4, "acc_mod": 0.15, "spd_mod": 0.0}, {"name": "Brontoth", "number": 91, "type": "Water", "class": "Mid-Range", "lp": 260, "atk": 56, "def": 33, "acc": 48, "spd": 24, "crit": 0.3, "support_target": "Own AZ", "atk_mod": 0.15, "def_mod": 0.4, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Elasmoth", "number": 92, "type": "Air", "class": "Mid-Range", "lp": 320, "atk": 59, "def": 32, "acc": 46, "spd": 25, "crit": 0.3, "support_target": "Own AZ", "atk_mod": 0.4, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.15}, {"name": "Hoplo", "number": 93, "type": "Air", "class": "Mid-Range", "lp": 240, "atk": 59, "def": 25, "acc": 50, "spd": 25, "crit": 0.4, "support_target": "Own AZ", "atk_mod": 0.5, "def_mod": -0.1, "acc_mod": 0.5, "spd_mod": 0.0}, {"name": "Andrarch", "number": 94, "type": "Fire", "class": "Mid-Range", "lp": 300, "atk": 65, "def": 25, "acc": 50, "spd": 25, "crit": 0.4, "support_target": "Enemy AZ", "atk_mod": -0.15, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Paki", "number": 95, "type": "Water", "class": "Mid-Range", "lp": 260, "atk": 61, "def": 25, "acc": 50, "spd": 25, "crit": 0.4, "support_target": "Enemy AZ", "atk_mod": -0.15, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Smilo", "number": 96, "type": "Fire", "class": "Mid-Range", "lp": 260, "atk": 61, "def": 25, "acc": 50, "spd": 25, "crit": 0.4, "support_target": "Own AZ", "atk_mod": -0.1, "def_mod": 0.9, "acc_mod": 0.0, "spd_mod": 0.9}, {"name": "Mammoth", "number": 97, "type": "Water", "class": "Mid-Range", "lp": 380, "atk": 59, "def": 37, "acc": 40, "spd": 16, "crit": 0.3, "support_target": "Own AZ", "atk_mod": 0.1, "def_mod": 0.1, "acc_mod": 0.1, "spd_mod": 0.1}, {"name": "Tryma", "number": 98, "type": "Earth", "class": "Mid-Range", "lp": 240, "atk": 61, "def": 20, "acc": 50, "spd": 25, "crit": 0.4, "support_target": "Own AZ", "atk_mod": 0.09, "def_mod": 0.09, "acc_mod": 0.09, "spd_mod": 0.09}, {"name": "Megath", "number": 99, "type": "Air", "class": "Mid-Range", "lp": 400, "atk": 32, "def": 25, "acc": 45, "spd": 21, "crit": 0.2, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": -0.2, "spd_mod": -0.2}, {"name": "Chelon", "number": 100, "type": "Water", "class": "Mid-Range", "lp": 300, "atk": 54, "def": 38, "acc": 45, "spd": 21, "crit": 0.2, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": -0.5, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Aeros", "number": 101, "type": "Air", "class": "Close-Range", "lp": 600, "atk": 89, "def": 34, "acc": 42, "spd": 15, "crit": 0.15, "support_target": "nan", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Teffla", "number": 101, "type": "Air", "class": "Close-Range", "lp": 620, "atk": 97, "def": 38, "acc": 36, "spd": 28, "crit": 0.2, "support_target": "nan", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Mapo", "number": 102, "type": "Water", "class": "Close-Range", "lp": 620, "atk": 83, "def": 36, "acc": 54, "spd": 14, "crit": 0.1, "support_target": "Own AZ", "atk_mod": 0.15, "def_mod": 0.0, "acc_mod": 0.15, "spd_mod": 0.0}, {"name": "Mapo King", "number": 102, "type": "Water", "class": "Close-Range", "lp": 680, "atk": 95, "def": 48, "acc": 44, "spd": 11, "crit": 0.3, "support_target": "Own AZ", "atk_mod": -0.35, "def_mod": -0.35, "acc_mod": -0.35, "spd_mod": -0.35}, {"name": "Berto", "number": 103, "type": "Fire", "class": "Close-Range", "lp": 540, "atk": 85, "def": 44, "acc": 36, "spd": 13, "crit": 0.15, "support_target": "Enemy AZ", "atk_mod": -0.15, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": -0.1}, {"name": "Raja", "number": 104, "type": "Earth", "class": "Close-Range", "lp": 580, "atk": 86, "def": 33, "acc": 35, "spd": 15, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": -0.1, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Giga Raja", "number": 104, "type": "Earth", "class": "Close-Range", "lp": 600, "atk": 94, "def": 38, "acc": 40, "spd": 9, "crit": 0.25, "support_target": "Own AZ", "atk_mod": 0.4, "def_mod": -0.2, "acc_mod": -0.2, "spd_mod": -0.2}, {"name": "Krypto", "number": 105, "type": "Neutral", "class": "Close-Range", "lp": 500, "atk": 77, "def": 31, "acc": 48, "spd": 17, "crit": 0.25, "support_target": "Own AZ", "atk_mod": -0.05, "def_mod": -0.05, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Archaeo", "number": 106, "type": "Water", "class": "Close-Range", "lp": 200, "atk": 37, "def": 13, "acc": 45, "spd": 24, "crit": 0.5, "support_target": "Own AZ", "atk_mod": 0.4, "def_mod": 0.0, "acc_mod": 0.8, "spd_mod": 0.0}, {"name": "Epidex", "number": 107, "type": "Air", "class": "Mid-Range", "lp": 240, "atk": 38, "def": 22, "acc": 47, "spd": 28, "crit": 0.4, "support_target": "Own AZ", "atk_mod": 0.15, "def_mod": 0.35, "acc_mod": 0.25, "spd_mod": 0.25}, {"name": "Lagia", "number": 108, "type": "Fire", "class": "Mid-Range", "lp": 280, "atk": 66, "def": 21, "acc": 45, "spd": 25, "crit": 0.3, "support_target": "Enemy AZ", "atk_mod": -0.09, "def_mod": -0.09, "acc_mod": -0.09, "spd_mod": -0.09}, {"name": "E-Raptor", "number": 109, "type": "Neutral", "class": "Mid-Range", "lp": 260, "atk": 48, "def": 21, "acc": 45, "spd": 22, "crit": 0.2, "support_target": "Enemy AZ", "atk_mod": -0.2, "def_mod": -0.2, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Toba", "number": 110, "type": "Water", "class": "Long-Range", "lp": 560, "atk": 68, "def": 35, "acc": 43, "spd": 14, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.2, "def_mod": 0.3, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Equinas", "number": 110, "type": "Water", "class": "Long-Range", "lp": 610, "atk": 73, "def": 38, "acc": 58, "spd": 35, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.1, "acc_mod": 0.0, "spd_mod": 0.4}, {"name": "Nigo", "number": 111, "type": "Earth", "class": "Long-Range", "lp": 700, "atk": 91, "def": 34, "acc": 30, "spd": 12, "crit": 0.5, "support_target": "Enemy AZ", "atk_mod": 0.2, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Camara", "number": 112, "type": "Air", "class": "Long-Range", "lp": 500, "atk": 61, "def": 31, "acc": 42, "spd": 10, "crit": 0.15, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.35, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Seidon", "number": 113, "type": "Water", "class": "Long-Range", "lp": 680, "atk": 78, "def": 36, "acc": 40, "spd": 11, "crit": 0.1, "support_target": "Own AZ", "atk_mod": -0.1, "def_mod": -0.1, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Menchi", "number": 114, "type": "Fire", "class": "Long-Range", "lp": 560, "atk": 70, "def": 25, "acc": 35, "spd": 15, "crit": 0.4, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.1, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Argento", "number": 115, "type": "Earth", "class": "Long-Range", "lp": 680, "atk": 82, "def": 37, "acc": 38, "spd": 10, "crit": 0.1, "support_target": "nan", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Shenliu", "number": 115, "type": "Earth", "class": "Long-Range", "lp": 760, "atk": 87, "def": 36, "acc": 40, "spd": 10, "crit": 0.2, "support_target": "Own AZ", "atk_mod": -0.1, "def_mod": 0.1, "acc_mod": 0.1, "spd_mod": -0.1}, {"name": "Dacerus", "number": 116, "type": "Fire", "class": "Close-Range", "lp": 440, "atk": 65, "def": 45, "acc": 45, "spd": 21, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.3, "def_mod": 0.5, "acc_mod": 0.0, "spd_mod": -0.1}, {"name": "Tsintao", "number": 117, "type": "Earth", "class": "Close-Range", "lp": 400, "atk": 73, "def": 32, "acc": 45, "spd": 21, "crit": 0.35, "support_target": "Enemy AZ", "atk_mod": -0.2, "def_mod": -0.2, "acc_mod": -0.2, "spd_mod": -0.2}, {"name": "Bulgon", "number": 117, "type": "Earth", "class": "Close-Range", "lp": 300, "atk": 75, "def": 13, "acc": 48, "spd": 30, "crit": 0.1, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": -0.99, "acc_mod": 0.0, "spd_mod": -0.99}, {"name": "Pacro", "number": 118, "type": "Air", "class": "Mid-Range", "lp": 420, "atk": 65, "def": 30, "acc": 50, "spd": 19, "crit": 0.3, "support_target": "Own AZ", "atk_mod": 0.1, "def_mod": 0.2, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Oloro", "number": 119, "type": "Water", "class": "Close-Range", "lp": 400, "atk": 75, "def": 25, "acc": 45, "spd": 28, "crit": 0.4, "support_target": "Own AZ", "atk_mod": 0.1, "def_mod": 0.1, "acc_mod": 0.1, "spd_mod": 0.1}, {"name": "Nippono", "number": 120, "type": "Neutral", "class": "Close-Range", "lp": 440, "atk": 77, "def": 20, "acc": 55, "spd": 25, "crit": 0.25, "support_target": "Enemy AZ", "atk_mod": -0.05, "def_mod": -0.15, "acc_mod": -0.05, "spd_mod": -0.15}, {"name": "Chasmo", "number": 121, "type": "Air", "class": "Mid-Range", "lp": 500, "atk": 66, "def": 35, "acc": 50, "spd": 16, "crit": 0.15, "support_target": "Own AZ", "atk_mod": 0.1, "def_mod": 0.0, "acc_mod": 0.4, "spd_mod": 0.0}, {"name": "Blitzigon", "number": 121, "type": "Air", "class": "Mid-Range", "lp": 540, "atk": 86, "def": 41, "acc": 38, "spd": 12, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.2, "def_mod": -0.1, "acc_mod": 0.8, "spd_mod": -0.4}, {"name": "Berta", "number": 122, "type": "Water", "class": "Mid-Range", "lp": 420, "atk": 69, "def": 34, "acc": 42, "spd": 20, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": -0.1, "acc_mod": 0.3, "spd_mod": 0.35}, {"name": "Nycto", "number": 123, "type": "Air", "class": "Long-Range", "lp": 280, "atk": 40, "def": 15, "acc": 50, "spd": 29, "crit": 0.5, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": -0.2}, {"name": "Nycto Ace", "number": 123, "type": "Air", "class": "Long-Range", "lp": 500, "atk": 74, "def": 26, "acc": 60, "spd": 30, "crit": 0.15, "support_target": "Own AZ", "atk_mod": 0.3, "def_mod": 0.0, "acc_mod": 0.2, "spd_mod": 0.0}, {"name": "Sungari", "number": 124, "type": "Fire", "class": "Long-Range", "lp": 200, "atk": 61, "def": 15, "acc": 36, "spd": 20, "crit": 0.25, "support_target": "Enemy AZ", "atk_mod": -0.4, "def_mod": -0.4, "acc_mod": -0.4, "spd_mod": -0.4}, {"name": "Thalasso", "number": 125, "type": "Water", "class": "Long-Range", "lp": 320, "atk": 47, "def": 12, "acc": 45, "spd": 30, "crit": 0.3, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.2}, {"name": "Hopter", "number": 126, "type": "Earth", "class": "Long-Range", "lp": 460, "atk": 77, "def": 20, "acc": 25, "spd": 13, "crit": 0.5, "support_target": "Own AZ", "atk_mod": -0.25, "def_mod": -0.1, "acc_mod": -0.1, "spd_mod": -0.1}, {"name": "Machai", "number": 127, "type": "Fire", "class": "Mid-Range", "lp": 280, "atk": 65, "def": 24, "acc": 43, "spd": 27, "crit": 0.4, "support_target": "Own AZ", "atk_mod": 0.5, "def_mod": 0.0, "acc_mod": -0.1, "spd_mod": 0.5}, {"name": "Peloro", "number": 128, "type": "Fire", "class": "Mid-Range", "lp": 360, "atk": 73, "def": 30, "acc": 20, "spd": 26, "crit": 0.3, "support_target": "Own AZ", "atk_mod": 0.5, "def_mod": 0.0, "acc_mod": -0.2, "spd_mod": 0.0}, {"name": "Metri", "number": 129, "type": "Earth", "class": "Mid-Range", "lp": 340, "atk": 56, "def": 36, "acc": 19, "spd": 24, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.5, "acc_mod": -0.2, "spd_mod": 0.0}, {"name": "Gomp", "number": 130, "type": "Water", "class": "Mid-Range", "lp": 360, "atk": 57, "def": 41, "acc": 38, "spd": 16, "crit": 0.3, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.2, "acc_mod": 0.0, "spd_mod": 0.2}, {"name": "Anan", "number": 131, "type": "Earth", "class": "Mid-Range", "lp": 340, "atk": 66, "def": 34, "acc": 37, "spd": 16, "crit": 0.35, "support_target": "Own AZ", "atk_mod": 0.2, "def_mod": 0.0, "acc_mod": 0.2, "spd_mod": 0.0}, {"name": "Parium", "number": 132, "type": "Air", "class": "Mid-Range", "lp": 470, "atk": 79, "def": 25, "acc": 35, "spd": 28, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.1, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.4}, {"name": "Ceros", "number": 133, "type": "Air", "class": "Mid-Range", "lp": 400, "atk": 62, "def": 25, "acc": 38, "spd": 29, "crit": 0.25, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.4, "spd_mod": 0.2}, {"name": "Synthos", "number": 134, "type": "Earth", "class": "Mid-Range", "lp": 260, "atk": 48, "def": 30, "acc": 50, "spd": 27, "crit": 0.3, "support_target": "Own AZ", "atk_mod": 0.3, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.15}, {"name": "Titanis", "number": 135, "type": "Neutral", "class": "Mid-Range", "lp": 500, "atk": 71, "def": 29, "acc": 35, "spd": 20, "crit": 0.4, "support_target": "Own AZ", "atk_mod": 0.2, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Dimetro", "number": 136, "type": "Fire", "class": "Mid-Range", "lp": 430, "atk": 70, "def": 38, "acc": 50, "spd": 20, "crit": 0.2, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": -0.3, "spd_mod": -0.3}, {"name": "Lugmos", "number": 136, "type": "Fire", "class": "Mid-Range", "lp": 520, "atk": 82, "def": 36, "acc": 50, "spd": 20, "crit": 0.15, "support_target": "Enemy AZ", "atk_mod": 0.25, "def_mod": 0.25, "acc_mod": -0.5, "spd_mod": -0.5}, {"name": "Edapho", "number": 137, "type": "Air", "class": "Mid-Range", "lp": 480, "atk": 63, "def": 30, "acc": 50, "spd": 24, "crit": 0.3, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": -0.4, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Geneos", "number": 137, "type": "Air", "class": "Mid-Range", "lp": 560, "atk": 76, "def": 42, "acc": 50, "spd": 18, "crit": 0.15, "support_target": "Enemy AZ", "atk_mod": -0.25, "def_mod": -0.5, "acc_mod": 0.5, "spd_mod": 0.25}, {"name": "Tanstro", "number": 138, "type": "Water", "class": "Long-Range", "lp": 600, "atk": 88, "def": 20, "acc": 32, "spd": 14, "crit": 0.25, "support_target": "Enemy AZ", "atk_mod": -0.15, "def_mod": -0.15, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Pendem", "number": 139, "type": "Earth", "class": "Mid-Range", "lp": 300, "atk": 52, "def": 46, "acc": 44, "spd": 12, "crit": 0.2, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": -0.5}, {"name": "Tophis", "number": 140, "type": "Neutral", "class": "Close-Range", "lp": 480, "atk": 72, "def": 30, "acc": 38, "spd": 15, "crit": 0.2, "support_target": "Enemy AZ", "atk_mod": -0.15, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": -0.3}, {"name": "Coelanth", "number": 141, "type": "Fire", "class": "Mid-Range", "lp": 400, "atk": 56, "def": 33, "acc": 41, "spd": 26, "crit": 0.15, "support_target": "Enemy AZ", "atk_mod": -0.15, "def_mod": -0.15, "acc_mod": -0.15, "spd_mod": -0.15}, {"name": "Dunkle", "number": 142, "type": "Earth", "class": "Mid-Range", "lp": 460, "atk": 72, "def": 35, "acc": 35, "spd": 27, "crit": 0.25, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": -0.25, "acc_mod": 0.0, "spd_mod": -0.25}, {"name": "Parapu", "number": 143, "type": "Water", "class": "Long-Range", "lp": 420, "atk": 64, "def": 46, "acc": 43, "spd": 19, "crit": 0.2, "support_target": "Enemy AZ", "atk_mod": -0.2, "def_mod": 0.0, "acc_mod": -0.05, "spd_mod": 0.0}, {"name": "Desmo", "number": 144, "type": "Fire", "class": "Mid-Range", "lp": 260, "atk": 52, "def": 37, "acc": 50, "spd": 20, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.3, "def_mod": 0.3, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Gaudry", "number": 145, "type": "Neutral", "class": "Mid-Range", "lp": 380, "atk": 68, "def": 30, "acc": 41, "spd": 20, "crit": 0.2, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": -0.2, "acc_mod": 0.0, "spd_mod": -0.05}, {"name": "Radox", "number": 146, "type": "Air", "class": "Mid-Range", "lp": 240, "atk": 43, "def": 38, "acc": 42, "spd": 25, "crit": 0.2, "support_target": "Enemy AZ", "atk_mod": -0.3, "def_mod": -0.3, "acc_mod": -0.3, "spd_mod": -0.3}, {"name": "Terata", "number": 147, "type": "Earth", "class": "Mid-Range", "lp": 200, "atk": 35, "def": 20, "acc": 45, "spd": 17, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.4, "def_mod": 0.2, "acc_mod": 0.2, "spd_mod": 0.4}, {"name": "Dikelo", "number": 148, "type": "Fire", "class": "Mid-Range", "lp": 220, "atk": 36, "def": 10, "acc": 45, "spd": 29, "crit": 0.25, "support_target": "Own AZ", "atk_mod": 0.3, "def_mod": 0.1, "acc_mod": 0.1, "spd_mod": 0.3}, {"name": "Anomalo", "number": 149, "type": "Air", "class": "Long-Range", "lp": 240, "atk": 56, "def": 40, "acc": 46, "spd": 22, "crit": 0.4, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": -0.25, "acc_mod": -0.25, "spd_mod": 0.0}, {"name": "Tonzilla", "number": 150, "type": "Earth", "class": "Close-Range", "lp": 555, "atk": 50, "def": 17, "acc": 33, "spd": 22, "crit": 0.4, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": -0.5, "spd_mod": 0.0}, {"name": "B-Rex", "number": 151, "type": "Fire", "class": "Close-Range", "lp": 240, "atk": 83, "def": 30, "acc": 48, "spd": 18, "crit": 0.1, "support_target": "Own AZ", "atk_mod": 0.4, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "B-Brachio", "number": 152, "type": "Neutral", "class": "Long-Range", "lp": 280, "atk": 60, "def": 12, "acc": 44, "spd": 10, "crit": 0.1, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.4, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "B-Lambeo", "number": 153, "type": "Air", "class": "Close-Range", "lp": 230, "atk": 75, "def": 10, "acc": 46, "spd": 19, "crit": 0.1, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.4, "spd_mod": 0.0}, {"name": "B-Ptera", "number": 154, "type": "Air", "class": "Long-Range", "lp": 160, "atk": 56, "def": 9, "acc": 51, "spd": 21, "crit": 0.1, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.7, "spd_mod": 0.7}, {"name": "B-Plesio", "number": 155, "type": "Water", "class": "Mid-Range", "lp": 170, "atk": 54, "def": 10, "acc": 50, "spd": 23, "crit": 0.05, "support_target": "Own AZ", "atk_mod": 0.99, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.99}, {"name": "B-Tricera", "number": 156, "type": "Water", "class": "Mid-Range", "lp": 180, "atk": 70, "def": 17, "acc": 45, "spd": 23, "crit": 0.1, "support_target": "Own AZ", "atk_mod": 0.8, "def_mod": 0.0, "acc_mod": 0.5, "spd_mod": 0.0}, {"name": "B-Jara", "number": 157, "type": "Fire", "class": "Long-Range", "lp": 150, "atk": 43, "def": 6, "acc": 53, "spd": 22, "crit": 0.1, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.99, "spd_mod": 0.99}, {"name": "Z-Rex", "number": 158, "type": "Legendary", "class": "Close-Range", "lp": 220, "atk": 85, "def": 33, "acc": 48, "spd": 14, "crit": 0.1, "support_target": "Enemy AZ", "atk_mod": 0.0, "def_mod": -0.77, "acc_mod": -0.77, "spd_mod": -0.77}, {"name": "Z-Tricera", "number": 159, "type": "Legendary", "class": "Mid-Range", "lp": 170, "atk": 73, "def": 36, "acc": 50, "spd": 26, "crit": 0.1, "support_target": "Enemy AZ", "atk_mod": -0.77, "def_mod": -0.77, "acc_mod": -0.77, "spd_mod": 0.0}, {"name": "Z-Ptera", "number": 160, "type": "Legendary", "class": "Long-Range", "lp": 110, "atk": 43, "def": 11, "acc": 53, "spd": 27, "crit": 0.1, "support_target": "Enemy AZ", "atk_mod": -0.77, "def_mod": 0.0, "acc_mod": -0.77, "spd_mod": -0.77}, {"name": "Z-Elasmo", "number": 161, "type": "Legendary", "class": "Mid-Range", "lp": 180, "atk": 72, "def": 29, "acc": 45, "spd": 26, "crit": 0.1, "support_target": "Enemy AZ", "atk_mod": -0.77, "def_mod": -0.77, "acc_mod": 0.0, "spd_mod": -0.77}, {"name": "Zongazonga", "number": 162, "type": "Legendary", "class": "Close-Range", "lp": 777, "atk": 99, "def": 25, "acc": 35, "spd": 6, "crit": 0.05, "support_target": "Own AZ", "atk_mod": -0.77, "def_mod": -0.77, "acc_mod": -0.77, "spd_mod": -0.77}, {"name": "Frigi", "number": 163, "type": "Legendary", "class": "Long-Range", "lp": 600, "atk": 88, "def": 30, "acc": 35, "spd": 6, "crit": 0.05, "support_target": "Own AZ", "atk_mod": -0.1, "def_mod": -0.1, "acc_mod": -0.1, "spd_mod": -0.1}, {"name": "Igno", "number": 164, "type": "Legendary", "class": "Close-Range", "lp": 550, "atk": 99, "def": 23, "acc": 30, "spd": 10, "crit": 0.05, "support_target": "Own AZ", "atk_mod": -0.5, "def_mod": -0.5, "acc_mod": -0.5, "spd_mod": -0.5}, {"name": "Squik", "number": 165, "type": "Neutral", "class": "Mid-Range", "lp": 200, "atk": 30, "def": 10, "acc": 48, "spd": 20, "crit": 0.2, "support_target": "Enemy AZ", "atk_mod": -0.3, "def_mod": -0.3, "acc_mod": -0.3, "spd_mod": -0.3}, {"name": "Squirk", "number": 166, "type": "Fire", "class": "Mid-Range", "lp": 200, "atk": 30, "def": 10, "acc": 48, "spd": 20, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.5, "def_mod": 0.3, "acc_mod": 0.2, "spd_mod": 0.1}, {"name": "Squirth", "number": 167, "type": "Earth", "class": "Mid-Range", "lp": 200, "atk": 30, "def": 10, "acc": 48, "spd": 20, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.1, "def_mod": 0.5, "acc_mod": 0.3, "spd_mod": 0.2}, {"name": "Squilk", "number": 168, "type": "Water", "class": "Mid-Range", "lp": 200, "atk": 30, "def": 10, "acc": 48, "spd": 20, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.2, "def_mod": 0.1, "acc_mod": 0.5, "spd_mod": 0.3}, {"name": "Squiro", "number": 169, "type": "Air", "class": "Mid-Range", "lp": 200, "atk": 30, "def": 10, "acc": 48, "spd": 20, "crit": 0.2, "support_target": "Own AZ", "atk_mod": 0.3, "def_mod": 0.2, "acc_mod": 0.1, "spd_mod": 0.5}, {"name": "Salada", "number": 170, "type": "Air", "class": "Close-Range", "lp": 340, "atk": 91, "def": 26, "acc": 36, "spd": 26, "crit": 0.4, "support_target": "Own AZ", "atk_mod": 0.55, "def_mod": -0.2, "acc_mod": -0.2, "spd_mod": 0.55}, {"name": "Dinomaton", "number": 171, "type": "Neutral", "class": "Close-Range", "lp": 500, "atk": 85, "def": 9, "acc": 35, "spd": 25, "crit": 0.05, "support_target": "nan", "atk_mod": 0.0, "def_mod": 0.0, "acc_mod": 0.0, "spd_mod": 0.0}, {"name": "Duna", "number": 172, "type": "Water", "class": "Mid-Range", "lp": 310, "atk": 62, "def": 24, "acc": 48, "spd": 25, "crit": 0.05, "support_target": "Own AZ", "atk_mod": 0.0, "def_mod": 0.77, "acc_mod": 0.0, "spd_mod": 0.77}, {"name": "Raptin", "number": 173, "type": "Air", "class": "Mid-Range", "lp": 330, "atk": 67, "def": 24, "acc": 48, "spd": 25, "crit": 0.05, "support_target": "Own AZ", "atk_mod": 0.77, "def_mod": 0.0, "acc_mod": 0.77, "spd_mod": 0.0}, {"name": "Dynal", "number": 174, "type": "Neutral", "class": "Mid-Range", "lp": 350, "atk": 94, "def": 24, "acc": 36, "spd": 6, "crit": 0.05, "support_target": "Enemy AZ", "atk_mod": -0.77, "def_mod": -0.77, "acc_mod": -0.77, "spd_mod": -0.77}];
 
 const TYPE_COLORS = {
-  Fire: '#e05c2a', Air: '#5ab4e0', Earth: '#4caf7d',
-  Water: '#1e88e5', Neutral: '#90a0b0', Legendary: '#ffd700'
+  Fire:'#e05c2a', Air:'#5ab4e0', Earth:'#4caf7d',
+  Water:'#1e88e5', Neutral:'#90a0b0', Legendary:'#ffd700'
 };
 
-// ══════════════════════════════════════════════
-//  STATE
-// ══════════════════════════════════════════════
-let currentUsername = '';
-let currentTeam   = [];   // array of vivosaur objects (max 5)
-let savedTeams    = [];   // [{name, members:[], active:bool}]
-let typeFilter    = 'all';
-let myTurn        = false;
+// ════════════════════════════════════════
+//  APP STATE
+// ════════════════════════════════════════
+let currentUsername = 'Guest';
+let currentTeam    = [];   // up to 5 vivo objects
+let savedTeams     = [];   // [{name, members[], active}]
+let typeFilter     = 'all';
 
-// ══════════════════════════════════════════════
+// Formation state
+let formationOrder  = [];  // ordered array of 5 vivos (draggable)
+let formationType   = 'sz'; // 'sz' = 1 AZ 2 SZ, 'az' = 2 AZ 1 SZ
+let formationLocked = false;
+let fsTimerInterval = null;
+let fsSecondsLeft   = 75;
+let opponentName    = '';
+let myTurn          = false;
+
+// Battle state
+let myBattleState   = null;
+let oppBattleState  = null;
+
+// ════════════════════════════════════════
 //  INIT
-// ══════════════════════════════════════════════
+// ════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
   loadFromStorage();
   renderVivoGrid();
@@ -821,9 +673,9 @@ window.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// ══════════════════════════════════════════════
+// ════════════════════════════════════════
 //  USERNAME
-// ══════════════════════════════════════════════
+// ════════════════════════════════════════
 function saveUsername() {
   const val = document.getElementById('username-input').value.trim();
   if (!val) { alert('Please enter a username!'); return; }
@@ -837,47 +689,43 @@ function changeUsername() {
   document.getElementById('username-modal').classList.remove('hidden');
 }
 
-// ══════════════════════════════════════════════
+// ════════════════════════════════════════
 //  NAVIGATION
-// ══════════════════════════════════════════════
+// ════════════════════════════════════════
 function showPanel(name) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('panel-' + name).classList.add('active');
-  document.getElementById('nav-' + name).classList.add('active');
+  const navBtn = document.getElementById('nav-' + name);
+  if (navBtn) navBtn.classList.add('active');
   if (name === 'battle') refreshBattlePanel();
 }
 
-// ══════════════════════════════════════════════
-//  VIVOSAUR GRID
-// ══════════════════════════════════════════════
+// ════════════════════════════════════════
+//  TEAM BUILDER — VIVO GRID
+// ════════════════════════════════════════
 function renderVivoGrid() {
-  const search = document.getElementById('vivo-search').value.toLowerCase();
+  const search = (document.getElementById('vivo-search').value || '').toLowerCase();
   const grid = document.getElementById('vivo-grid');
   grid.innerHTML = '';
 
-  const filtered = VIVOSAURS.filter(v => {
+  VIVOSAURS.filter(v => {
     const matchType = typeFilter === 'all' || v.type === typeFilter;
     const matchSearch = !search || v.name.toLowerCase().includes(search);
     return matchType && matchSearch;
-  });
-
-  filtered.forEach(v => {
+  }).forEach(v => {
     const inTeam = currentTeam.some(t => t.name === v.name);
-    const teamFull = currentTeam.length >= 5 && !inTeam;
+    const full   = currentTeam.length >= 5 && !inTeam;
     const card = document.createElement('div');
-    card.className = 'vivo-card' + (inTeam ? ' selected' : '') + (teamFull ? ' disabled' : '');
+    card.className = 'vivo-card' + (inTeam ? ' selected' : '') + (full ? ' disabled' : '');
     card.innerHTML = `
       <div class="vc-name">${v.name}</div>
-      <span class="vc-type type-${v.type.toLowerCase()}">${v.type}</span>
-      <div class="vc-lp">${v.lp} LP</div>
-    `;
-    if (!teamFull) card.onclick = () => toggleVivo(v);
+      <span class="type-badge type-${v.type.toLowerCase()}">${v.type}</span>
+      <div class="vc-lp">${v.lp} LP</div>`;
+    if (!full) card.onclick = () => toggleVivo(v);
     grid.appendChild(card);
   });
 }
-
-function filterVivos() { renderVivoGrid(); }
 
 function setTypeFilter(type, btn) {
   typeFilter = type;
@@ -888,19 +736,16 @@ function setTypeFilter(type, btn) {
 
 function toggleVivo(vivo) {
   const idx = currentTeam.findIndex(v => v.name === vivo.name);
-  if (idx > -1) {
-    currentTeam.splice(idx, 1);
-  } else {
-    if (currentTeam.length >= 5) return;
-    currentTeam.push(vivo);
-  }
+  if (idx > -1) currentTeam.splice(idx, 1);
+  else { if (currentTeam.length >= 5) return; currentTeam.push(vivo); }
   renderVivoGrid();
   renderTeamSlots();
+  document.getElementById('save-team-btn').disabled = currentTeam.length === 0;
 }
 
-// ══════════════════════════════════════════════
-//  TEAM SLOTS
-// ══════════════════════════════════════════════
+// ════════════════════════════════════════
+//  TEAM BUILDER — SLOTS
+// ════════════════════════════════════════
 function renderTeamSlots() {
   const container = document.getElementById('team-slots');
   container.innerHTML = '';
@@ -908,21 +753,12 @@ function renderTeamSlots() {
     const v = currentTeam[i];
     const slot = document.createElement('div');
     slot.className = 'team-slot' + (v ? ' filled' : '');
-    if (v) {
-      slot.innerHTML = `
-        <div class="slot-num">${i+1}</div>
-        <div class="slot-info">
-          <div class="slot-name">${v.name}</div>
-          <div class="slot-sub">${v.type} · ${v.class} · ${v.lp} LP</div>
-        </div>
-        <button class="slot-remove" onclick="removeFromTeam(${i})">✕</button>
-      `;
-    } else {
-      slot.innerHTML = `
-        <div class="slot-num">${i+1}</div>
-        <div class="slot-empty">Empty slot</div>
-      `;
-    }
+    slot.innerHTML = v
+      ? `<div class="slot-num">${i+1}</div>
+         <div style="flex:1"><div class="slot-name">${v.name}</div>
+         <div class="slot-sub">${v.type} · ${v.class} · ${v.lp} LP</div></div>
+         <button class="slot-remove" onclick="removeFromTeam(${i})">✕</button>`
+      : `<div class="slot-num">${i+1}</div><div class="slot-empty">Empty slot</div>`;
     container.appendChild(slot);
   }
   document.getElementById('save-team-btn').disabled = currentTeam.length === 0;
@@ -940,208 +776,425 @@ function clearCurrentTeam() {
   renderTeamSlots();
 }
 
-// ══════════════════════════════════════════════
-//  SAVE / LOAD TEAMS
-// ══════════════════════════════════════════════
+// ════════════════════════════════════════
+//  SAVED TEAMS
+// ════════════════════════════════════════
 function openSaveTeamModal() {
-  if (currentTeam.length === 0) return;
+  if (!currentTeam.length) return;
   document.getElementById('team-name-input').value = '';
   document.getElementById('save-team-modal').classList.remove('hidden');
   setTimeout(() => document.getElementById('team-name-input').focus(), 50);
 }
-function closeSaveTeamModal() {
-  document.getElementById('save-team-modal').classList.add('hidden');
-}
+function closeSaveTeamModal() { document.getElementById('save-team-modal').classList.add('hidden'); }
 function confirmSaveTeam() {
   const name = document.getElementById('team-name-input').value.trim() || 'My Team';
   const isFirst = savedTeams.length === 0;
   savedTeams.push({ name, members: [...currentTeam], active: isFirst });
-  saveToStorage();
-  renderSavedTeams();
-  closeSaveTeamModal();
-  refreshBattlePanel();
+  saveToStorage(); renderSavedTeams(); closeSaveTeamModal(); refreshBattlePanel();
 }
-
 function renderSavedTeams() {
   const container = document.getElementById('saved-teams-list');
   const msg = document.getElementById('no-teams-msg');
   container.innerHTML = '';
   msg.style.display = savedTeams.length === 0 ? 'block' : 'none';
-
   savedTeams.forEach((team, idx) => {
     const row = document.createElement('div');
     row.className = 'saved-team-row' + (team.active ? ' active-team' : '');
     row.innerHTML = `
       <div style="flex:1">
-        <div class="saved-team-name">${team.name} ${team.active ? '<span class=\'active-badge\'>ACTIVE</span>' : ''}</div>
+        <div class="saved-team-name">${team.name} ${team.active ? '<span class="active-badge">ACTIVE</span>' : ''}</div>
         <div class="saved-team-members">${team.members.map(m => m.name).join(', ')}</div>
       </div>
-      <button class="saved-team-delete" onclick="deleteTeam(${idx}, event)" title="Delete">🗑</button>
-    `;
+      <button class="saved-team-delete" onclick="deleteTeam(${idx},event)">🗑</button>`;
     row.onclick = (e) => { if (!e.target.closest('.saved-team-delete')) setActiveTeam(idx); };
     container.appendChild(row);
   });
 }
-
 function setActiveTeam(idx) {
   savedTeams.forEach((t, i) => t.active = i === idx);
-  // load into current team slot editor too
   currentTeam = [...savedTeams[idx].members];
-  saveToStorage();
-  renderSavedTeams();
-  renderVivoGrid();
-  renderTeamSlots();
-  refreshBattlePanel();
+  saveToStorage(); renderSavedTeams(); renderVivoGrid(); renderTeamSlots(); refreshBattlePanel();
 }
-
 function deleteTeam(idx, e) {
   e.stopPropagation();
   const wasActive = savedTeams[idx].active;
   savedTeams.splice(idx, 1);
   if (wasActive && savedTeams.length > 0) savedTeams[0].active = true;
-  saveToStorage();
-  renderSavedTeams();
-  refreshBattlePanel();
+  saveToStorage(); renderSavedTeams(); refreshBattlePanel();
 }
-
-// ══════════════════════════════════════════════
-//  STORAGE
-// ══════════════════════════════════════════════
-function saveToStorage() {
-  localStorage.setItem('ffs_teams', JSON.stringify(savedTeams));
-}
+function saveToStorage() { localStorage.setItem('ffs_teams', JSON.stringify(savedTeams)); }
 function loadFromStorage() {
   const raw = localStorage.getItem('ffs_teams');
-  if (raw) {
-    try { savedTeams = JSON.parse(raw); } catch(e) { savedTeams = []; }
-  }
+  if (raw) { try { savedTeams = JSON.parse(raw); } catch(e) { savedTeams = []; } }
+  const uname = localStorage.getItem('ffs_username');
+  if (uname) currentUsername = uname;
 }
 
-// ══════════════════════════════════════════════
-//  BATTLE PANEL
-// ══════════════════════════════════════════════
+// ════════════════════════════════════════
+//  BATTLE NAV PANEL
+// ════════════════════════════════════════
 function refreshBattlePanel() {
   const activeTeam = savedTeams.find(t => t.active);
   const list = document.getElementById('atp-members-list');
-  const btn = document.getElementById('battle-go-btn');
-
+  const btn  = document.getElementById('battle-go-btn');
   if (!activeTeam) {
-    list.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;font-style:italic">No active team. Go to Team Builder!</div>';
-    btn.disabled = true;
-    btn.textContent = 'No Active Team';
-    return;
+    list.innerHTML = '<div style="color:var(--muted);font-size:.82rem;font-style:italic">No active team. Go to Team Builder!</div>';
+    btn.disabled = true; btn.textContent = 'No Active Team'; return;
   }
-
-  btn.disabled = false;
-  btn.textContent = 'Find Opponent';
+  btn.disabled = false; btn.textContent = 'Find Opponent';
   list.innerHTML = activeTeam.members.map(v => `
     <div class="atp-member">
-      <div class="type-pip" style="background:${TYPE_COLORS[v.type] || '#888'}"></div>
+      <div class="type-pip" style="background:${TYPE_COLORS[v.type]||'#888'}"></div>
       <span>${v.name}</span>
-      <span style="font-size:0.68rem;color:var(--muted);margin-left:4px">${v.type}</span>
+      <span style="font-size:.68rem;color:var(--muted);margin-left:4px">${v.type}</span>
       <span class="atp-lp">${v.lp} LP</span>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
-// ══════════════════════════════════════════════
+// ════════════════════════════════════════
 //  CHAT MODAL
-// ══════════════════════════════════════════════
+// ════════════════════════════════════════
 function openChatModal() {
   document.getElementById('chat-target-input').value = '';
   document.getElementById('chat-modal').classList.remove('hidden');
 }
-function closeChatModal() {
-  document.getElementById('chat-modal').classList.add('hidden');
-}
+function closeChatModal() { document.getElementById('chat-modal').classList.add('hidden'); }
 
-// ══════════════════════════════════════════════
-//  SOCKET.IO + BATTLE
-// ══════════════════════════════════════════════
+// ════════════════════════════════════════
+//  SOCKET + MATCHMAKING
+// ════════════════════════════════════════
 const socket = io();
-let myHP = 0, myMaxHP = 0, oppHP = 0, oppMaxHP = 0;
 
-const moveDamage = { 'Fossil Cannon': 50, 'Stone Stomp': 40, 'Dino Rush': 65, 'Ancient Roar': 0 };
-
-function startBattle() {
+function startSearch() {
   const activeTeam = savedTeams.find(t => t.active);
   if (!activeTeam) return;
-  const name = currentUsername || 'Trainer';
-
   document.getElementById('battle-btn-area').style.display = 'none';
   document.getElementById('battle-waiting').style.display = 'block';
-
-  socket.emit('find_match', name);
+  socket.emit('find_match', { playerName: currentUsername, team: activeTeam.members });
 }
 
-socket.on('waiting_for_opponent', () => {
-  // already showing spinner
-});
+socket.on('waiting_for_opponent', () => { /* spinner already showing */ });
 
-socket.on('match_found', ({ opponent, yourTurn }) => {
-  const activeTeam = savedTeams.find(t => t.active);
-  const lead = activeTeam ? activeTeam.members[0] : null;
-
-  myHP = myMaxHP = lead ? lead.lp : 450;
-  oppHP = oppMaxHP = 450;
-
-  document.getElementById('battle-opponent-name').textContent = opponent;
-  document.getElementById('your-vivo-name').textContent = lead ? lead.name : 'Vivosaur';
-  document.getElementById('opp-vivo-name').textContent = 'Opponent';
-  document.getElementById('your-hp').textContent = myHP;
-  document.getElementById('opp-hp').textContent = oppHP;
-
-  updateHpBar('your', myHP, myMaxHP);
-  updateHpBar('opp', oppHP, oppMaxHP);
-
-  myTurn = yourTurn;
-  document.getElementById('turn-status').textContent = yourTurn ? '⚔️ Your turn — pick a move!' : `⏳ ${opponent}'s turn…`;
-  setMoveButtons(yourTurn);
+// ════════════════════════════════════════
+//  FORMATION SCREEN
+// ════════════════════════════════════════
+socket.on('enter_formation', ({ opponent, timerSeconds }) => {
+  opponentName = opponent;
+  formationLocked = false;
+  formationType = 'sz';
+  fsSecondsLeft = timerSeconds;
 
   document.getElementById('battle-waiting').style.display = 'none';
-  document.getElementById('battle-btn-area').style.display = 'flex';
+  document.getElementById('battle-btn-area').style.display = 'block';
+  document.getElementById('fs-opponent-name').textContent = opponent;
+  document.getElementById('ready-btn').disabled = false;
+  document.getElementById('ready-btn').classList.remove('locked');
+  document.getElementById('waiting-for-opp-msg').classList.add('hidden');
+
+  // Set formation order from active team
+  const activeTeam = savedTeams.find(t => t.active);
+  formationOrder = activeTeam ? [...activeTeam.members] : [];
+
+  // Pad to 5 if fewer
+  while (formationOrder.length < 5) formationOrder.push(null);
+
+  updateFormationToggleUI();
+  renderLineup();
+  startFormationTimer();
+
+  document.getElementById('formation-screen').classList.add('active');
+});
+
+socket.on('formation_auto_locked', () => {
+  if (!formationLocked) lockFormation(true);
+});
+
+socket.on('opponent_ready', () => {
+  document.getElementById('waiting-for-opp-msg').textContent = `${opponentName} is ready!`;
+  document.getElementById('waiting-for-opp-msg').classList.remove('hidden');
+});
+
+function startFormationTimer() {
+  clearInterval(fsTimerInterval);
+  const timerEl = document.getElementById('fs-timer');
+  timerEl.textContent = fsSecondsLeft;
+  timerEl.classList.remove('urgent');
+
+  fsTimerInterval = setInterval(() => {
+    fsSecondsLeft--;
+    timerEl.textContent = fsSecondsLeft;
+    if (fsSecondsLeft <= 10) timerEl.classList.add('urgent');
+    if (fsSecondsLeft <= 0) {
+      clearInterval(fsTimerInterval);
+      if (!formationLocked) lockFormation(true);
+    }
+  }, 1000);
+}
+
+function setFormationType(type) {
+  formationType = type;
+  updateFormationToggleUI();
+  renderLineup();
+}
+
+function updateFormationToggleUI() {
+  const szBtn = document.getElementById('ftoggle-sz');
+  const azBtn = document.getElementById('ftoggle-az');
+  szBtn.className = 'ftoggle-btn' + (formationType === 'sz' ? ' active-sz' : '');
+  azBtn.className = 'ftoggle-btn' + (formationType === 'az' ? ' active-az' : '');
+}
+
+// Get zone label for each lineup position (0-4)
+function getZoneForPos(posIndex) {
+  // 'sz' = 1 AZ (pos 0), 2 SZ (pos 1,2), unused (pos 3,4)
+  // 'az' = 2 AZ (pos 0,1), 1 SZ (pos 2), unused (pos 3,4)
+  if (posIndex >= 3) return 'unused';
+  if (formationType === 'sz') return posIndex === 0 ? 'az' : 'sz';
+  if (formationType === 'az') return posIndex <= 1 ? 'az' : 'sz';
+  return 'unused';
+}
+
+function renderLineup() {
+  const container = document.getElementById('vivo-lineup');
+  container.innerHTML = '';
+
+  formationOrder.forEach((vivo, i) => {
+    if (i === 3) {
+      // separator before unused
+      const sep = document.createElement('div');
+      sep.className = 'lineup-separator';
+      container.appendChild(sep);
+    }
+
+    const zone = getZoneForPos(i);
+    const card = document.createElement('div');
+    card.className = `lineup-card zone-${zone}`;
+    card.draggable = true;
+    card.dataset.index = i;
+
+    const zoneLabel = zone === 'az' ? 'Attack' : zone === 'sz' ? 'Support' : 'Unused';
+    const typeColor = vivo ? (TYPE_COLORS[vivo.type] || '#888') : '#888';
+
+    card.innerHTML = vivo
+      ? `<div class="lc-zone-label ${zone}">${zoneLabel}</div>
+         <div class="lc-name">${vivo.name}</div>
+         <span class="type-badge type-${vivo.type.toLowerCase()}" style="font-size:.58rem">${vivo.type}</span>
+         <div class="lc-lp">${vivo.lp} LP</div>`
+      : `<div class="lc-name" style="color:var(--muted)">—</div>`;
+
+    // Drag events
+    card.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('text/plain', i);
+      card.classList.add('dragging');
+    });
+    card.addEventListener('dragend', () => card.classList.remove('dragging'));
+    card.addEventListener('dragover', e => { e.preventDefault(); card.classList.add('drag-over'); });
+    card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+    card.addEventListener('drop', e => {
+      e.preventDefault();
+      card.classList.remove('drag-over');
+      const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
+      const toIdx   = i;
+      if (fromIdx === toIdx) return;
+      // Swap
+      const tmp = formationOrder[fromIdx];
+      formationOrder[fromIdx] = formationOrder[toIdx];
+      formationOrder[toIdx]   = tmp;
+      renderLineup();
+    });
+
+    container.appendChild(card);
+  });
+}
+
+function lockFormation(auto = false) {
+  if (formationLocked) return;
+  formationLocked = true;
+  clearInterval(fsTimerInterval);
+
+  // Build formation object from current order + type
+  const battlers = formationOrder.slice(0, 3).filter(Boolean);
+  let azSlots = [], szSlots = [];
+  battlers.forEach((v, i) => {
+    const zone = getZoneForPos(i);
+    if (zone === 'az') azSlots.push(v);
+    else szSlots.push(v);
+  });
+
+  const formation = { azSlots, szSlots };
+
+  document.getElementById('ready-btn').disabled = true;
+  document.getElementById('ready-btn').classList.add('locked');
+  document.getElementById('ready-btn').textContent = auto ? 'Auto-Locked!' : 'Locked In!';
+  document.getElementById('waiting-for-opp-msg').classList.remove('hidden');
+  document.getElementById('waiting-for-opp-msg').textContent = 'Waiting for opponent…';
+
+  socket.emit('lock_formation', { formation });
+}
+
+// ════════════════════════════════════════
+//  BATTLE START
+// ════════════════════════════════════════
+socket.on('battle_start', ({ yourFormation, oppFormation, yourState, oppState, yourTurn }) => {
+  clearInterval(fsTimerInterval);
+  myBattleState  = yourState;
+  oppBattleState = oppState;
+  myTurn = yourTurn;
+
+  document.getElementById('b-opponent-name').textContent = opponentName;
+  document.getElementById('formation-screen').classList.remove('active');
   document.getElementById('battle-screen').classList.add('active');
-  battleLog(`⚔️ Battle vs ${opponent} — Begin!`);
+
+  renderField('your', yourState);
+  renderField('opp', oppState);
+
+  document.getElementById('turn-bar').textContent = yourTurn
+    ? '⚔️ Your turn — pick a move!'
+    : `⏳ ${opponentName}'s turn…`;
+  setMoveButtons(yourTurn);
+
+  battleLog(`⚔️ Battle vs ${opponentName} — Begin!`, 'sys');
+  if (yourState.szSlots.length) {
+    yourState.szSlots.forEach(sv => {
+      const target = sv.support_target === 'Own AZ' ? 'your AZ' : "opponent's AZ";
+      battleLog(`📊 ${sv.name} support active → ${target}`, 'sys');
+    });
+  }
 });
 
-socket.on('your_move_sent', ({ move }) => {
-  const dmg = moveDamage[move] || 0;
-  oppHP = Math.max(0, oppHP - dmg);
-  updateHpBar('opp', oppHP, oppMaxHP);
-  battleLog(`➤ You used <strong>${move}</strong>${dmg ? ` — dealt ${dmg} damage!` : ' — lowered DEF!'}`, 'you');
+// ════════════════════════════════════════
+//  FIELD RENDERING
+// ════════════════════════════════════════
+// Positions: col 1 = SZ (left), col 2 = AZ (right), rows 1-3
+// Grid layout: row1-col1=slot1, row1-col2=slot2, row2-col1=slot3, etc.
+// Formation A (sz): AZ=pos2 (row1,AZ-col), SZ=pos3+pos5
+// Formation B (az): AZ=pos2+pos4, SZ=pos5
+
+function renderField(who, state) {
+  // Clear all slots
+  for (let i = 1; i <= 6; i++) {
+    const slot = document.getElementById(`${who}-slot-${i}`);
+    slot.className = 'field-slot empty';
+    slot.innerHTML = '';
+  }
+
+  // AZ slots go in column 2 (even positions: 2, 4, 6)
+  // SZ slots go in column 1 (odd positions: 1, 3, 5)
+  const azPositions = [2, 4]; // up to 2 AZ
+  const szPositions = [3, 5]; // up to 2 SZ
+
+  state.azSlots.forEach((v, i) => {
+    const pos = azPositions[i];
+    if (!pos) return;
+    fillSlot(who, pos, v, 'az');
+  });
+
+  state.szSlots.forEach((v, i) => {
+    const pos = szPositions[i];
+    if (!pos) return;
+    fillSlot(who, pos, v, 'sz');
+  });
+}
+
+function fillSlot(who, pos, vivo, zone) {
+  const slot = document.getElementById(`${who}-slot-${pos}`);
+  slot.className = `field-slot occupied-${zone}`;
+  slot.dataset.vivoName = vivo.name;
+  slot.dataset.zone = zone;
+
+  const lp = vivo.currentLp !== undefined ? vivo.currentLp : vivo.lp;
+  const maxLp = vivo.lp;
+  const pct = Math.max(0, (lp / maxLp) * 100);
+  const hpColor = pct > 50 ? 'var(--hp-green)' : pct > 25 ? 'var(--hp-yellow)' : 'var(--hp-red)';
+
+  const effectsHtml = zone === 'az' && (vivo.effectiveAtk !== vivo.atk) ? `
+    <div class="fs-stats">ATK ${vivo.effectiveAtk} DEF ${vivo.effectiveDef}</div>` : '';
+
+  slot.innerHTML = `
+    <span class="fs-zone-tag ${zone}">${zone === 'az' ? 'AZ' : 'SZ'}</span>
+    <div class="fs-name">${vivo.name}</div>
+    <div class="fs-hp-bar-bg"><div class="fs-hp-bar" id="${who}-hp-bar-${pos}" style="width:${pct}%;background:${hpColor}"></div></div>
+    <div class="fs-lp" id="${who}-lp-${pos}">${lp} / ${maxLp} LP</div>
+    ${effectsHtml}`;
+}
+
+// ════════════════════════════════════════
+//  MOVES (placeholder until real moves)
+// ════════════════════════════════════════
+const MOVE_DAMAGE = { 'Fossil Cannon': 50, 'Stone Stomp': 40, 'Dino Rush': 65, 'Ancient Roar': 0 };
+
+function sendMove(moveName) {
+  if (!myTurn) return;
+  socket.emit('send_move', { moveName, targetIndex: 0 });
+}
+
+socket.on('your_move_sent', ({ moveName }) => {
+  const dmg = MOVE_DAMAGE[moveName] || 0;
+  // Apply damage to first opp AZ slot
+  if (oppBattleState && oppBattleState.azSlots[0]) {
+    oppBattleState.azSlots[0].currentLp = Math.max(0,
+      (oppBattleState.azSlots[0].currentLp || oppBattleState.azSlots[0].lp) - dmg);
+    updateSlotLp('opp', 2, oppBattleState.azSlots[0]);
+    socket.emit('update_lp', { role:'opp', slotType:'az', slotIndex:0, newLp: oppBattleState.azSlots[0].currentLp });
+  }
+  battleLog(`➤ You used <strong>${moveName}</strong>${dmg ? ` — ${dmg} damage!` : ''}`, 'you');
   myTurn = false;
-  document.getElementById('turn-status').textContent = "⏳ Opponent's turn…";
+  document.getElementById('turn-bar').textContent = `⏳ ${opponentName}'s turn…`;
   setMoveButtons(false);
-  if (oppHP <= 0) endBattle(true);
+  checkWin();
 });
 
-socket.on('opponent_moved', ({ move, moverName }) => {
-  const dmg = moveDamage[move] || 0;
-  myHP = Math.max(0, myHP - dmg);
-  updateHpBar('your', myHP, myMaxHP);
-  battleLog(`➤ ${moverName} used <strong>${move}</strong>${dmg ? ` — you took ${dmg} damage!` : '!'}`, 'opp');
+socket.on('opponent_moved', ({ moveName, moverName }) => {
+  const dmg = MOVE_DAMAGE[moveName] || 0;
+  if (myBattleState && myBattleState.azSlots[0]) {
+    myBattleState.azSlots[0].currentLp = Math.max(0,
+      (myBattleState.azSlots[0].currentLp || myBattleState.azSlots[0].lp) - dmg);
+    updateSlotLp('your', 2, myBattleState.azSlots[0]);
+  }
+  battleLog(`➤ ${moverName} used <strong>${moveName}</strong>${dmg ? ` — ${dmg} damage!` : ''}`, 'opp');
   myTurn = true;
-  document.getElementById('turn-status').textContent = '⚔️ Your turn — pick a move!';
+  document.getElementById('turn-bar').textContent = '⚔️ Your turn — pick a move!';
   setMoveButtons(true);
-  if (myHP <= 0) endBattle(false);
+  checkWin();
+});
+
+socket.on('lp_updated', ({ slotType, slotIndex, newLp }) => {
+  // Opponent telling us their LP changed (their view of our side)
+  // Already handled locally
 });
 
 socket.on('opponent_disconnected', () => {
-  battleLog('⚠️ Opponent disconnected.', 'opp');
+  battleLog('⚠️ Opponent disconnected.', 'sys');
   setMoveButtons(false);
+  document.getElementById('turn-bar').textContent = 'Opponent left.';
 });
 
-function sendMove(move) {
-  if (!myTurn) return;
-  socket.emit('send_move', { move });
+function updateSlotLp(who, pos, vivo) {
+  const lp = vivo.currentLp;
+  const maxLp = vivo.lp;
+  const pct = Math.max(0, (lp / maxLp) * 100);
+  const hpColor = pct > 50 ? 'var(--hp-green)' : pct > 25 ? 'var(--hp-yellow)' : 'var(--hp-red)';
+  const bar  = document.getElementById(`${who}-hp-bar-${pos}`);
+  const text = document.getElementById(`${who}-lp-${pos}`);
+  if (bar)  { bar.style.width = pct + '%'; bar.style.background = hpColor; }
+  if (text) text.textContent = `${lp} / ${maxLp} LP`;
 }
 
-function updateHpBar(who, current, max) {
-  const pct = Math.max(0, (current / max) * 100);
-  const bar = document.getElementById(`${who}-hp-bar`);
-  bar.style.width = pct + '%';
-  bar.style.background = pct > 50 ? 'var(--hp-green)' : pct > 25 ? 'var(--hp-yellow)' : 'var(--hp-red)';
-  document.getElementById(`${who}-hp`).textContent = current;
+function checkWin() {
+  const oppDown = oppBattleState && oppBattleState.azSlots.every(v => (v.currentLp || v.lp) <= 0);
+  const myDown  = myBattleState  && myBattleState.azSlots.every(v  => (v.currentLp || v.lp) <= 0);
+  if (oppDown) endBattle(true);
+  else if (myDown) endBattle(false);
+}
+
+function endBattle(won) {
+  setMoveButtons(false);
+  document.getElementById('turn-bar').textContent = won ? '🏆 Victory!' : '💀 Defeated…';
+  battleLog(won ? '🏆 You win!' : '💀 You were defeated.', 'sys');
+  setTimeout(() => {
+    document.getElementById('battle-screen').classList.remove('active');
+    showPanel('home');
+  }, 3000);
 }
 
 function setMoveButtons(enabled) {
@@ -1155,15 +1208,6 @@ function battleLog(msg, cls) {
   p.innerHTML = msg;
   log.appendChild(p);
   log.scrollTop = log.scrollHeight;
-}
-
-function endBattle(won) {
-  setMoveButtons(false);
-  document.getElementById('turn-status').textContent = won ? '🏆 Victory!' : '💀 Defeated…';
-  setTimeout(() => {
-    document.getElementById('battle-screen').classList.remove('active');
-    showPanel('home');
-  }, 2500);
 }
 </script>
 </body>
