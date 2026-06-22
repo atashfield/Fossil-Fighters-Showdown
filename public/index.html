@@ -1242,6 +1242,12 @@ function lockFormation(auto = false) {
 // ════════════════════════════════════════
 socket.on('battle_start', ({ yourFormation, oppFormation, yourState, oppState, yourTurn }) => {
   clearInterval(fsTimerInterval);
+
+  // Ensure currentLp is set on all vivosaurs
+  const initLp = (slots) => (slots||[]).forEach(v => { if (v && v.currentLp === undefined) v.currentLp = v.lp; });
+  initLp(yourState.azSlots); initLp(yourState.szSlots);
+  initLp(oppState.azSlots);  initLp(oppState.szSlots);
+
   myBattleState  = yourState;
   oppBattleState = oppState;
   myTurn = yourTurn;
@@ -1702,10 +1708,18 @@ function confirmAttack(targetPos) {
 socket.on('your_move_sent', ({ moveName, attackerName, attackerPos, targetName }) => {
   attackPending = false;
   const dmg = (PLACEHOLDER_MOVES.find(m => m.name === moveName) || {}).power || 0;
-  const targetVivo = findOppVivoByName(targetName);
+  console.log('your_move_sent:', moveName, 'on', targetName, 'dmg:', dmg);
+  const allOpp = [
+    ...(oppBattleState?.azSlots || []),
+    ...(oppBattleState?.szSlots || [])
+  ];
+  const targetVivo = allOpp.find(v => v && v.name === targetName);
+  console.log('opp targetVivo found:', targetVivo ? targetVivo.name : 'NOT FOUND');
   if (targetVivo) {
-    targetVivo.currentLp = Math.max(0, (targetVivo.currentLp ?? targetVivo.lp) - dmg);
+    const prevLp = targetVivo.currentLp ?? targetVivo.lp;
+    targetVivo.currentLp = Math.max(0, prevLp - dmg);
     const actualPos = findSlotPosByName('opp', targetName);
+    console.log('opp actualPos:', actualPos);
     if (actualPos) updateSlotLp('opp', actualPos, targetVivo);
     if (targetVivo.currentLp <= 0 && actualPos) removeVivo('opp', actualPos);
   }
@@ -1740,11 +1754,26 @@ socket.on('your_move_sent', ({ moveName, attackerName, attackerPos, targetName }
 
 socket.on('opponent_moved', ({ moveName, attackerName, targetName }) => {
   const dmg = (PLACEHOLDER_MOVES.find(m => m.name === moveName) || {}).power || 0;
-  const targetVivo = findMyVivoByName(targetName);
+  console.log('opponent_moved received:', moveName, 'from', attackerName, 'on', targetName, 'dmg:', dmg);
+
+  // Find the vivosaur in state — search both azSlots and szSlots
+  let targetVivo = null;
+  const allMine = [
+    ...(myBattleState?.azSlots || []),
+    ...(myBattleState?.szSlots || [])
+  ];
+  targetVivo = allMine.find(v => v && v.name === targetName);
+  console.log('targetVivo found:', targetVivo ? targetVivo.name : 'NOT FOUND', 'currentLp:', targetVivo?.currentLp, 'lp:', targetVivo?.lp);
+
   if (targetVivo) {
-    targetVivo.currentLp = Math.max(0, (targetVivo.currentLp ?? targetVivo.lp) - dmg);
+    const prevLp = targetVivo.currentLp ?? targetVivo.lp;
+    targetVivo.currentLp = Math.max(0, prevLp - dmg);
+    console.log('LP updated from', prevLp, 'to', targetVivo.currentLp);
     const actualPos = findSlotPosByName('your', targetName);
-    if (actualPos) updateSlotLp('your', actualPos, targetVivo);
+    console.log('actualPos:', actualPos);
+    if (actualPos) {
+      updateSlotLp('your', actualPos, targetVivo);
+    }
     if (targetVivo.currentLp <= 0 && actualPos) removeVivo('your', actualPos);
   }
   battleLog(`➤ ${attackerName} used <strong>${moveName}</strong> on your ${targetName}${dmg ? ` — ${dmg} damage!` : ''}`, 'opp');
@@ -1832,17 +1861,14 @@ function rotate(dir, steps) {
   // Collect all vivosaurs with their current positions
   // We track positions in myBattleState
   if (!myBattleState.posMap) {
-    // Initialize position map from current state
+    // Initialize position map — use direct references so currentLp updates persist through rotations
     myBattleState.posMap = {};
-    // Use the current renderField logic to figure out where they are
-    // AZ: 1 vivo → pos4, 2 vivos → pos2+pos6
-    // SZ: 1 vivo → pos3, 2 vivos → pos1+pos5
     const azCount = myBattleState.azSlots.length;
     const szCount = myBattleState.szSlots.length;
     const azPos = azCount === 1 ? [4] : [2, 6];
     const szPos = szCount === 1 ? [3] : [1, 5];
-    myBattleState.azSlots.forEach((v, i) => { myBattleState.posMap[azPos[i]] = { ...v, zone: 'az' }; });
-    myBattleState.szSlots.forEach((v, i) => { myBattleState.posMap[szPos[i]] = { ...v, zone: 'sz' }; });
+    myBattleState.azSlots.forEach((v, i) => { v.zone = 'az'; myBattleState.posMap[azPos[i]] = v; });
+    myBattleState.szSlots.forEach((v, i) => { v.zone = 'sz'; myBattleState.posMap[szPos[i]] = v; });
   }
 
   // Apply N steps of rotation
@@ -1889,6 +1915,10 @@ function rotate(dir, steps) {
       fillSlot('your', parseInt(pos), vivo, vivo.zone);
       const slot = document.getElementById(`your-slot-${pos}`);
       slot.classList.add('rotating');
+      // Re-apply used-attacker class if this vivo already attacked this turn
+      if (usedAttackers.has(vivo.name)) {
+        slot.classList.add('used-attacker');
+      }
     }
     attachStatHovers();
 
