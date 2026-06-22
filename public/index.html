@@ -758,6 +758,11 @@
                 <option value="pos">Positive (buff)</option>
                 <option value="neg">Negative (debuff)</option>
               </select>
+              <select class="filter-select" id="filter-link" onchange="applyFilters()">
+                <option value="">Link</option>
+                <option value="yes">Has Link</option>
+                <option value="no">No Link</option>
+              </select>
               <select class="filter-select" id="sort-by" onchange="applyFilters()">
                 <option value="name">Sort: Name</option>
                 <option value="lp">Sort: LP</option>
@@ -1061,6 +1066,7 @@ function renderVivoGrid() {
   const supTarget = document.getElementById('filter-support-target')?.value || '';
   const supStat   = document.getElementById('filter-support-stat')?.value || '';
   const supDir    = document.getElementById('filter-support-dir')?.value || '';
+  const linkFilter = document.getElementById('filter-link')?.value || '';
   const sortBy    = document.getElementById('sort-by')?.value || 'name';
   const sortDir   = document.getElementById('sort-dir')?.value || 'asc';
   const grid      = document.getElementById('vivo-grid');
@@ -1088,6 +1094,9 @@ function renderVivoGrid() {
         }
       }
     }
+    // Link filter
+    if (linkFilter === 'yes' && (v.link === null || v.link === undefined)) return false;
+    if (linkFilter === 'no'  && (v.link !== null && v.link !== undefined)) return false;
     // Smart search
     if (search) {
       const nameMatch    = v.name.toLowerCase().includes(search);
@@ -1283,6 +1292,7 @@ function clearAllFilters() {
   document.getElementById('filter-support-dir').value = '';
   document.getElementById('filter-support-stat').style.display = 'none';
   document.getElementById('filter-support-dir').style.display = 'none';
+  document.getElementById('filter-link').value = '';
   document.getElementById('sort-by').value = 'name';
   document.getElementById('sort-dir').value = 'asc';
   applyFilters();
@@ -1297,6 +1307,7 @@ function updateFilterTags() {
   const supTarget = document.getElementById('filter-support-target')?.value;
   const supStat   = document.getElementById('filter-support-stat')?.value;
   const supDir    = document.getElementById('filter-support-dir')?.value;
+  const linkFilter = document.getElementById('filter-link')?.value;
   const search  = document.getElementById('vivo-search')?.value?.trim();
 
   if (type)   active.push({ label: `Type: ${type}`,  clear: () => { document.getElementById('filter-type').value = ''; applyFilters(); } });
@@ -1314,6 +1325,7 @@ function updateFilterTags() {
       applyFilters();
     }});
   }
+  if (linkFilter) active.push({ label: linkFilter === 'yes' ? 'Has Link' : 'No Link', clear: () => { document.getElementById('filter-link').value = ''; applyFilters(); } });
   if (search) active.push({ label: `"${search}"`, clear: () => { document.getElementById('vivo-search').value = ''; applyFilters(); } });
 
   tags.innerHTML = active.map((t, i) =>
