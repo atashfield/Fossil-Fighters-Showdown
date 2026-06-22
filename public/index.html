@@ -726,7 +726,7 @@
             </div>
             <div class="filter-dropdowns">
               <select class="filter-select" id="filter-type" onchange="applyFilters()">
-                <option value="">All Types</option>
+                <option value="">Elemental Type</option>
                 <option value="Fire">🔥 Fire</option>
                 <option value="Air">🌬️ Air</option>
                 <option value="Earth">🌿 Earth</option>
@@ -735,16 +735,28 @@
                 <option value="Legendary">⭐ Legendary</option>
               </select>
               <select class="filter-select" id="filter-class" onchange="applyFilters()">
-                <option value="">All Classes</option>
+                <option value="">Class</option>
                 <option value="Close-Range">Close-Range</option>
                 <option value="Mid-Range">Mid-Range</option>
                 <option value="Long-Range">Long-Range</option>
               </select>
-              <select class="filter-select" id="filter-support" onchange="applyFilters()">
-                <option value="">All Support</option>
+              <select class="filter-select" id="filter-support-target" onchange="onSupportTargetChange()">
+                <option value="">Support Effects</option>
                 <option value="Own AZ">Own AZ</option>
                 <option value="Enemy AZ">Enemy AZ</option>
                 <option value="None">No Support</option>
+              </select>
+              <select class="filter-select" id="filter-support-stat" onchange="applyFilters()" style="display:none">
+                <option value="">Any Stat</option>
+                <option value="atk">ATK</option>
+                <option value="def">DEF</option>
+                <option value="acc">ACC</option>
+                <option value="spd">SPD</option>
+              </select>
+              <select class="filter-select" id="filter-support-dir" onchange="applyFilters()" style="display:none">
+                <option value="">+ or −</option>
+                <option value="pos">Positive (buff)</option>
+                <option value="neg">Negative (debuff)</option>
               </select>
               <select class="filter-select" id="sort-by" onchange="applyFilters()">
                 <option value="name">Sort: Name</option>
@@ -1043,13 +1055,15 @@ function showPanel(name) {
 //  TEAM BUILDER — VIVO GRID
 // ════════════════════════════════════════
 function renderVivoGrid() {
-  const search  = (document.getElementById('vivo-search')?.value || '').toLowerCase().trim();
-  const type    = document.getElementById('filter-type')?.value || '';
-  const cls     = document.getElementById('filter-class')?.value || '';
-  const support = document.getElementById('filter-support')?.value || '';
-  const sortBy  = document.getElementById('sort-by')?.value || 'name';
-  const sortDir = document.getElementById('sort-dir')?.value || 'asc';
-  const grid    = document.getElementById('vivo-grid');
+  const search    = (document.getElementById('vivo-search')?.value || '').toLowerCase().trim();
+  const type      = document.getElementById('filter-type')?.value || '';
+  const cls       = document.getElementById('filter-class')?.value || '';
+  const supTarget = document.getElementById('filter-support-target')?.value || '';
+  const supStat   = document.getElementById('filter-support-stat')?.value || '';
+  const supDir    = document.getElementById('filter-support-dir')?.value || '';
+  const sortBy    = document.getElementById('sort-by')?.value || 'name';
+  const sortDir   = document.getElementById('sort-dir')?.value || 'asc';
+  const grid      = document.getElementById('vivo-grid');
   grid.innerHTML = '';
 
   let filtered = VIVOSAURS.filter(v => {
@@ -1057,18 +1071,29 @@ function renderVivoGrid() {
     if (type && v.type !== type) return false;
     // Class filter
     if (cls && v.class !== cls) return false;
-    // Support filter
-    if (support) {
+    // Support filter — chained
+    if (supTarget) {
       const st = (v.support_target && v.support_target !== 'nan') ? v.support_target : 'None';
-      if (support === 'None' && st !== 'None') return false;
-      if (support !== 'None' && st !== support) return false;
+      if (supTarget === 'None') {
+        if (st !== 'None') return false;
+      } else {
+        if (st !== supTarget) return false;
+        // Stat filter
+        if (supStat) {
+          const modKey = supStat + '_mod';
+          const modVal = v[modKey] ?? 0;
+          if (supDir === 'pos' && modVal <= 0) return false;
+          if (supDir === 'neg' && modVal >= 0) return false;
+          if (!supDir && modVal === 0) return false; // must have some effect on that stat
+        }
+      }
     }
-    // Smart search: name + ability/passive + move names + move effects
+    // Smart search
     if (search) {
       const nameMatch    = v.name.toLowerCase().includes(search);
       const abilityMatch = v.ability && v.ability.toLowerCase().includes(search);
       const moveMatch    = v.moves && v.moves.some(m =>
-        (m.name  && m.name.toLowerCase().includes(search)) ||
+        (m.name   && m.name.toLowerCase().includes(search)) ||
         (m.effect && m.effect.toLowerCase().includes(search)) ||
         (m.category && m.category.toLowerCase().includes(search))
       );
@@ -1232,6 +1257,18 @@ function hideVivoHoverCard() {
 //  FILTER & SORT STATE
 // ════════════════════════════════════════
 // (typeFilter kept for compatibility but no longer used directly)
+function onSupportTargetChange() {
+  const target = document.getElementById('filter-support-target').value;
+  const statEl = document.getElementById('filter-support-stat');
+  const dirEl  = document.getElementById('filter-support-dir');
+  // Show stat+dir dropdowns only when Own AZ or Enemy AZ selected (not None/empty)
+  const showChained = target === 'Own AZ' || target === 'Enemy AZ';
+  statEl.style.display = showChained ? '' : 'none';
+  dirEl.style.display  = showChained ? '' : 'none';
+  if (!showChained) { statEl.value = ''; dirEl.value = ''; }
+  applyFilters();
+}
+
 function applyFilters() {
   renderVivoGrid();
   updateFilterTags();
@@ -1241,7 +1278,11 @@ function clearAllFilters() {
   document.getElementById('vivo-search').value = '';
   document.getElementById('filter-type').value = '';
   document.getElementById('filter-class').value = '';
-  document.getElementById('filter-support').value = '';
+  document.getElementById('filter-support-target').value = '';
+  document.getElementById('filter-support-stat').value = '';
+  document.getElementById('filter-support-dir').value = '';
+  document.getElementById('filter-support-stat').style.display = 'none';
+  document.getElementById('filter-support-dir').style.display = 'none';
   document.getElementById('sort-by').value = 'name';
   document.getElementById('sort-dir').value = 'asc';
   applyFilters();
@@ -1253,16 +1294,31 @@ function updateFilterTags() {
   const active = [];
   const type    = document.getElementById('filter-type')?.value;
   const cls     = document.getElementById('filter-class')?.value;
-  const support = document.getElementById('filter-support')?.value;
+  const supTarget = document.getElementById('filter-support-target')?.value;
+  const supStat   = document.getElementById('filter-support-stat')?.value;
+  const supDir    = document.getElementById('filter-support-dir')?.value;
   const search  = document.getElementById('vivo-search')?.value?.trim();
-  if (type)    active.push({ label: `Type: ${type}`,    clear: () => { document.getElementById('filter-type').value = ''; applyFilters(); } });
-  if (cls)     active.push({ label: `Class: ${cls}`,    clear: () => { document.getElementById('filter-class').value = ''; applyFilters(); } });
-  if (support) active.push({ label: `Support: ${support}`, clear: () => { document.getElementById('filter-support').value = ''; applyFilters(); } });
-  if (search)  active.push({ label: `"${search}"`,       clear: () => { document.getElementById('vivo-search').value = ''; applyFilters(); } });
+
+  if (type)   active.push({ label: `Type: ${type}`,  clear: () => { document.getElementById('filter-type').value = ''; applyFilters(); } });
+  if (cls)    active.push({ label: `Class: ${cls}`,  clear: () => { document.getElementById('filter-class').value = ''; applyFilters(); } });
+  if (supTarget) {
+    let supLabel = `Support: ${supTarget}`;
+    if (supStat) supLabel += ` · ${supStat.toUpperCase()}`;
+    if (supDir)  supLabel += ` · ${supDir === 'pos' ? 'Buff' : 'Debuff'}`;
+    active.push({ label: supLabel, clear: () => {
+      document.getElementById('filter-support-target').value = '';
+      document.getElementById('filter-support-stat').value = '';
+      document.getElementById('filter-support-dir').value = '';
+      document.getElementById('filter-support-stat').style.display = 'none';
+      document.getElementById('filter-support-dir').style.display = 'none';
+      applyFilters();
+    }});
+  }
+  if (search) active.push({ label: `"${search}"`, clear: () => { document.getElementById('vivo-search').value = ''; applyFilters(); } });
+
   tags.innerHTML = active.map((t, i) =>
     `<span class="filter-tag">${t.label}<button onclick="filterTagClear(${i})">✕</button></span>`
   ).join('');
-  // Store clear fns
   tags._clearFns = active.map(t => t.clear);
 }
 
