@@ -339,6 +339,18 @@
     .rot-btn .rot-num   { font-size: .65rem; line-height: 1; }
     .rot-divider { width: 1px; height: 28px; background: var(--border); margin: 0 4px; }
 
+    .end-turn-btn {
+      width: 52px; height: 52px; border-radius: 8px;
+      border: 2px solid #b8860b;
+      background: rgba(255,193,7,.15);
+      color: #ffc107;
+      font-family: 'Inter', sans-serif; font-size: .68rem; font-weight: 700;
+      cursor: pointer; transition: all .15s; line-height: 1.2;
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+    .end-turn-btn:hover:not(:disabled) { background: rgba(255,193,7,.28); border-color: #ffc107; }
+    .end-turn-btn:disabled { opacity: .35; cursor: default; }
+
     /* Slot transition for rotation animation */
     .field-slot { transition: border-color .2s, background .2s, opacity .2s; }
     .field-slot.rotating { opacity: 0; transform: scale(.92); transition: opacity .25s, transform .25s; }
@@ -618,7 +630,7 @@
 
       <!-- YOUR SIDE (left) -->
       <div class="field-side">
-        <div class="field-side-label">Your Side</div>
+        <div class="field-side-label" id="your-side-label">You</div>
         <div class="field-grid" id="your-field-grid">
           <!-- 6 slots: pos 1-6, cols = SZ(left) | AZ(right) -->
           <div class="field-slot empty" id="your-slot-1" data-pos="1"></div>
@@ -634,7 +646,7 @@
 
       <!-- OPPONENT SIDE (right, mirrored) -->
       <div class="field-side">
-        <div class="field-side-label">Opponent</div>
+        <div class="field-side-label" id="opp-side-label">Opponent</div>
         <div class="field-grid" id="opp-field-grid">
           <div class="field-slot empty" id="opp-slot-1" data-pos="1"></div>
           <div class="field-slot empty" id="opp-slot-2" data-pos="2"></div>
@@ -663,6 +675,10 @@
           <span class="rot-arrow">↺</span><span class="rot-num">1</span>
         </button>
       </div>
+      <div class="rot-divider"></div>
+      <button class="end-turn-btn" id="end-turn-btn" onclick="manualEndTurn()" disabled title="End Turn">
+        End<br>Turn
+      </button>
       <div class="rot-divider"></div>
       <div class="rot-group">
         <button class="rot-btn" disabled id="rot-cw-1" onclick="rotate('cw',1)" title="Clockwise 1">
@@ -1111,6 +1127,8 @@ socket.on('battle_start', ({ yourFormation, oppFormation, yourState, oppState, y
   myTurn = yourTurn;
 
   document.getElementById('b-opponent-name').textContent = opponentName;
+  document.getElementById('your-side-label').textContent = currentUsername;
+  document.getElementById('opp-side-label').textContent = opponentName;
   document.getElementById('formation-screen').classList.remove('active');
   document.getElementById('battle-screen').classList.add('active');
 
@@ -1220,6 +1238,12 @@ let selectedAttacker = null;
 let selectedMove     = null;
 let usedAttackers    = new Set();
 
+function manualEndTurn() {
+  if (!myTurn) return;
+  socket.emit('end_turn');
+  endMyTurn();
+}
+
 function enterMyTurn() {
   myTurn = true;
   usedAttackers.clear();
@@ -1227,6 +1251,7 @@ function enterMyTurn() {
   selectedAttacker = null;
   selectedMove = null;
   setRotationButtons(true);
+  document.getElementById('end-turn-btn').disabled = false;
   showMovePrompt('Select one of your vivosaurs to attack.');
   highlightSelectableVivos();
   document.getElementById('turn-bar').textContent = '⚔️ Your turn — select a vivosaur!';
@@ -1240,6 +1265,7 @@ function endMyTurn() {
   clearAllHighlights();
   renderMoveButtons([]);
   setRotationButtons(false);
+  document.getElementById('end-turn-btn').disabled = true;
   document.getElementById('turn-bar').textContent = `⏳ ${opponentName}'s turn…`;
   showMovePrompt('');
 }
@@ -1421,6 +1447,7 @@ function checkWin() {
 function endBattle(won) {
   clearAllHighlights();
   setRotationButtons(false);
+  document.getElementById('end-turn-btn').disabled = true;
   renderMoveButtons([]);
   showMovePrompt('');
   document.getElementById('turn-bar').textContent = won ? '🏆 Victory!' : '💀 Defeated…';
