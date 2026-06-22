@@ -1230,7 +1230,9 @@ function showVivoHoverCard(v, e) {
       return (a.fp ?? 0) - (b.fp ?? 0);
     });
     movesList.innerHTML = sortedMoves.map(m => {
-      const catClass = (m.category || 'standard').toLowerCase();
+      // Treat Link category as Standard for display purposes
+      const displayCat = m.category === 'Link' ? 'Standard' : m.category;
+      const catClass = (displayCat || 'standard').toLowerCase();
       const fpHtml  = m.fp  !== null && m.fp  !== undefined ? `FP <span>${m.fp}</span>`  : '';
       const dmgHtml = m.dmg !== null && m.dmg !== undefined ? `DMG <span>${m.dmg}</span>` : '';
       const effectHtml = m.effect ? `<div class="vhc-move-effect">${m.effect}</div>` : '';
@@ -1238,7 +1240,7 @@ function showVivoHoverCard(v, e) {
         <div class="vhc-move">
           <div class="vhc-move-header">
             <span class="vhc-move-name">${m.name}</span>
-            <span class="vhc-move-cat ${catClass}">${m.category}</span>
+            <span class="vhc-move-cat ${catClass}">${displayCat}</span>
           </div>
           ${(fpHtml || dmgHtml) ? `<div class="vhc-move-stats">${fpHtml}${dmgHtml ? (fpHtml ? '&nbsp;&nbsp;' : '') + dmgHtml : ''}</div>` : ''}
           ${effectHtml}
