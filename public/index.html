@@ -811,15 +811,16 @@
     </div>
   </div>
 
-  <!-- Confirmation popup (end turn / forfeit) -->
-  <div class="confirm-popup" id="confirm-popup">
-    <div class="confirm-box">
-      <h3 id="confirm-title">Are you sure?</h3>
-      <p id="confirm-msg">This action cannot be undone.</p>
-      <div class="confirm-btns">
-        <button class="confirm-no" onclick="closeConfirm()">No</button>
-        <button class="confirm-yes" id="confirm-yes-btn" onclick="confirmYes()">Yes</button>
-      </div>
+</div><!-- end battle-screen -->
+
+<!-- Confirmation popup — outside battle-screen so fixed positioning works correctly -->
+<div class="confirm-popup" id="confirm-popup">
+  <div class="confirm-box">
+    <h3 id="confirm-title">Are you sure?</h3>
+    <p id="confirm-msg">This action cannot be undone.</p>
+    <div class="confirm-btns">
+      <button class="confirm-no" onclick="closeConfirm()">No</button>
+      <button class="confirm-yes" id="confirm-yes-btn" onclick="confirmYes()">Yes</button>
     </div>
   </div>
 </div>
@@ -1698,14 +1699,15 @@ function confirmAttack(targetPos) {
   });
 }
 
-socket.on('your_move_sent', ({ moveName, attackerName, attackerPos, targetName, targetPos }) => {
+socket.on('your_move_sent', ({ moveName, attackerName, attackerPos, targetName }) => {
   attackPending = false;
   const dmg = (PLACEHOLDER_MOVES.find(m => m.name === moveName) || {}).power || 0;
   const targetVivo = findOppVivoByName(targetName);
   if (targetVivo) {
     targetVivo.currentLp = Math.max(0, (targetVivo.currentLp ?? targetVivo.lp) - dmg);
-    updateSlotLp('opp', targetPos, targetVivo);
-    if (targetVivo.currentLp <= 0) removeVivo('opp', targetPos);
+    const actualPos = findSlotPosByName('opp', targetName);
+    if (actualPos) updateSlotLp('opp', actualPos, targetVivo);
+    if (targetVivo.currentLp <= 0 && actualPos) removeVivo('opp', actualPos);
   }
   battleLog(`➤ Your <strong>${attackerName}</strong> used <strong>${moveName}</strong> on ${targetName}${dmg ? ` — ${dmg} damage!` : ''}`, 'you');
   usedAttackers.add(attackerName);
@@ -1719,35 +1721,31 @@ socket.on('your_move_sent', ({ moveName, attackerName, attackerPos, targetName, 
   clearAllHighlights();
   hideAllStatBlocks();
   renderMoveButtons([]);
-
-  // Check if any vivosaurs still available to attack
   const living = getMyLivingVivosWithPos();
   const anyUnused = living.some(({ pos }) => {
     const s = document.getElementById(`your-slot-${pos}`);
     return s && !usedAttackers.has(s.dataset.vivoName);
   });
-
   if (anyUnused) {
     highlightSelectableVivos();
     showMovePrompt('Select another vivosaur to attack, or end your turn.');
   } else {
-    // All attacked — keep rotation + end turn active, but no more attackers to pick
     showMovePrompt('All vivosaurs have attacked. Rotate or end your turn.');
     document.getElementById('turn-bar').textContent = '⚔️ Rotate or end your turn.';
   }
-  // Rotation and End Turn always stay enabled throughout your turn
   setRotationButtons(true);
   document.getElementById('end-turn-btn').disabled = false;
   checkWin();
 });
 
-socket.on('opponent_moved', ({ moveName, attackerName, targetName, targetPos }) => {
+socket.on('opponent_moved', ({ moveName, attackerName, targetName }) => {
   const dmg = (PLACEHOLDER_MOVES.find(m => m.name === moveName) || {}).power || 0;
   const targetVivo = findMyVivoByName(targetName);
   if (targetVivo) {
     targetVivo.currentLp = Math.max(0, (targetVivo.currentLp ?? targetVivo.lp) - dmg);
-    updateSlotLp('your', targetPos, targetVivo);
-    if (targetVivo.currentLp <= 0) removeVivo('your', targetPos);
+    const actualPos = findSlotPosByName('your', targetName);
+    if (actualPos) updateSlotLp('your', actualPos, targetVivo);
+    if (targetVivo.currentLp <= 0 && actualPos) removeVivo('your', actualPos);
   }
   battleLog(`➤ ${attackerName} used <strong>${moveName}</strong> on your ${targetName}${dmg ? ` — ${dmg} damage!` : ''}`, 'opp');
   checkWin();
@@ -1915,6 +1913,17 @@ function rotate(dir, steps) {
       battleLog(`↻ You rotated ${dir === 'ccw' ? 'counterclockwise' : 'clockwise'} ${steps} step${steps>1?'s':''}`, 'sys');
     }, 400);
   }, 280);
+}
+
+// Find which slot position a vivosaur is currently in by name
+function findSlotPosByName(who, name) {
+  for (let pos = 1; pos <= 6; pos++) {
+    const slot = document.getElementById(`${who}-slot-${pos}`);
+    if (slot && slot.dataset.vivoName === name && !slot.classList.contains('empty')) {
+      return pos;
+    }
+  }
+  return null;
 }
 
 function findMyVivoByName(name) {
