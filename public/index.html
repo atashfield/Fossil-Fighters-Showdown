@@ -593,9 +593,7 @@
     .vhc-move-stats { display: flex; gap: 10px; font-size: .68rem; color: var(--muted); }
     .vhc-move-stats span { color: var(--text); font-weight: 600; }
     .vhc-move-effect { font-size: .67rem; color: var(--muted); line-height: 1.4; }
-    .vhc-moves-list { display: flex; flex-direction: column; gap: 5px; max-height: 200px; overflow-y: auto; }
-    .vhc-moves-list::-webkit-scrollbar { width: 3px; }
-    .vhc-moves-list::-webkit-scrollbar-thumb { background: var(--border); }
+    .vhc-moves-list { display: flex; flex-direction: column; gap: 5px; }
   </style>
 </head>
 <body>
@@ -1265,8 +1263,14 @@ function positionHoverCard(e) {
   let x = e.clientX + margin;
   let y = e.clientY + margin;
 
+  // Flip left if card goes off right edge
   if (x + cw > vw) x = e.clientX - cw - margin;
-  if (y + ch > vh) y = Math.max(0, vh - ch - margin);
+  // If card is taller than viewport, anchor near top; otherwise clamp to bottom
+  if (ch >= vh - margin * 2) {
+    y = margin;
+  } else if (y + ch > vh) {
+    y = Math.max(margin, vh - ch - margin);
+  }
 
   card.style.left = x + 'px';
   card.style.top  = y + 'px';
