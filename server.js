@@ -186,33 +186,26 @@ io.on("connection", (socket) => {
     console.log(`${socket.playerName} rotated formation`);
   });
 
-  // ── Move handling (placeholder until real moves added) ──
-  socket.on("send_move", ({ moveName, targetIndex }) => {
-    const battleId = socket.battleId;
-    if (!battleId || !battles[battleId]) return;
-    const battle = battles[battleId];
-    const role = socket.role;
-    const oppRole = role === "p1" ? "p2" : "p1";
-    const opponent = battle[oppRole];
-
-    // Forward move to opponent
-    opponent.emit("opponent_moved", {
-      moveName,
-      targetIndex,
-      moverName: socket.playerName,
-    });
-    socket.emit("your_move_sent", { moveName, targetIndex });
-
-    console.log(`${socket.playerName} used ${moveName}`);
-  });
-
-  // ── Sync LP changes to opponent ──
-  socket.on("update_lp", ({ role, slotType, slotIndex, newLp }) => {
+  // ── Move handling ──
+  socket.on("send_move", ({ moveName, attackerName, attackerPos, targetName, targetPos }) => {
     const battleId = socket.battleId;
     if (!battleId || !battles[battleId]) return;
     const battle = battles[battleId];
     const oppRole = socket.role === "p1" ? "p2" : "p1";
-    battle[oppRole].emit("lp_updated", { role, slotType, slotIndex, newLp });
+    const opponent = battle[oppRole];
+    socket.emit("your_move_sent", { moveName, attackerName, attackerPos, targetName, targetPos });
+    opponent.emit("opponent_moved", { moveName, attackerName, attackerPos, targetName, targetPos });
+    console.log(`${socket.playerName}: ${attackerName} used ${moveName} on ${targetName}`);
+  });
+
+  // ── End turn ──
+  socket.on("end_turn", () => {
+    const battleId = socket.battleId;
+    if (!battleId || !battles[battleId]) return;
+    const battle = battles[battleId];
+    const oppRole = socket.role === "p1" ? "p2" : "p1";
+    battle[oppRole].emit("turn_ended");
+    console.log(`${socket.playerName} ended their turn`);
   });
 
   // ── Disconnect ──
