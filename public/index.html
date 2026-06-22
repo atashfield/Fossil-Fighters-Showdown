@@ -357,9 +357,12 @@
     }
 
     /* Move buttons */
-    .move-area { display: flex; gap: 10px; flex-shrink: 0; }
+    .move-area { display: flex; gap: 10px; flex-shrink: 0; flex-wrap: wrap; }
+    .move-area-prompt {
+      width: 100%; font-size: .78rem; color: var(--muted); font-style: italic; padding: 2px 0;
+    }
     .move-btn {
-      flex: 1; padding: 12px; background: var(--sidebar);
+      flex: 1; min-width: 140px; padding: 12px; background: var(--sidebar);
       border: 2px solid var(--border); border-radius: 8px;
       color: var(--text); font-size: .85rem; font-family: 'Inter', sans-serif;
       font-weight: 600; cursor: pointer; transition: all .15s; text-align: left;
@@ -367,6 +370,25 @@
     .move-btn:hover:not(:disabled) { border-color: var(--accent); background: var(--panel); }
     .move-btn:disabled { opacity: .4; cursor: default; }
     .move-sub { font-size: .68rem; color: var(--muted); margin-top: 2px; }
+
+    /* Field slot interaction states */
+    .field-slot.selectable {
+      cursor: pointer; border-color: var(--accent) !important;
+      box-shadow: 0 0 0 2px rgba(196,163,90,.25);
+    }
+    .field-slot.selectable:hover { background: rgba(196,163,90,.18) !important; }
+    .field-slot.selected-attacker {
+      border-color: var(--accent) !important;
+      background: rgba(196,163,90,.25) !important;
+      box-shadow: 0 0 0 3px rgba(196,163,90,.45);
+    }
+    .field-slot.targetable {
+      cursor: crosshair; border-color: var(--accent2) !important;
+      box-shadow: 0 0 0 2px rgba(233,69,96,.3);
+    }
+    .field-slot.targetable:hover { background: rgba(233,69,96,.18) !important; }
+    .field-slot.used-attacker { opacity: .55; }
+    .field-slot.used-attacker .fs-name::after { content: ' ✓'; color: var(--hp-green); font-size: .7rem; }
 
     /* Battle log */
     .battle-log {
@@ -657,18 +679,7 @@
 
     <!-- Moves -->
     <div class="move-area" id="move-area">
-      <button class="move-btn" disabled onclick="sendMove('Fossil Cannon')">
-        Fossil Cannon<div class="move-sub">⚡ Power 50 · Normal</div>
-      </button>
-      <button class="move-btn" disabled onclick="sendMove('Stone Stomp')">
-        Stone Stomp<div class="move-sub">⚡ Power 40 · Earth</div>
-      </button>
-      <button class="move-btn" disabled onclick="sendMove('Dino Rush')">
-        Dino Rush<div class="move-sub">⚡ Power 65 · Normal</div>
-      </button>
-      <button class="move-btn" disabled onclick="sendMove('Ancient Roar')">
-        Ancient Roar<div class="move-sub">🌀 Lowers DEF</div>
-      </button>
+      <div class="move-area-prompt" id="move-prompt">Select one of your vivosaurs to attack.</div>
     </div>
 
     <!-- Log -->
@@ -1109,8 +1120,9 @@ socket.on('battle_start', ({ yourFormation, oppFormation, yourState, oppState, y
   document.getElementById('turn-bar').textContent = yourTurn
     ? '⚔️ Your turn — pick a move!'
     : `⏳ ${opponentName}'s turn…`;
-  setMoveButtons(yourTurn);
-  setRotationButtons(true); // rotation always available
+  setRotationButtons(yourTurn ? true : false);
+  if (yourTurn) enterMyTurn();
+  else { setRotationButtons(false); showMovePrompt(''); }
 
   battleLog(`⚔️ Battle vs ${opponentName} — Begin!`, 'sys');
   if (yourState.szSlots.length) {
@@ -1194,51 +1206,177 @@ function fillSlot(who, pos, vivo, zone) {
 }
 
 // ════════════════════════════════════════
-//  MOVES (placeholder until real moves)
+//  MOVES & ATTACK FLOW
 // ════════════════════════════════════════
-const MOVE_DAMAGE = { 'Fossil Cannon': 50, 'Stone Stomp': 40, 'Dino Rush': 65, 'Ancient Roar': 0 };
+const PLACEHOLDER_MOVES = [
+  { name: 'Fossil Cannon', desc: '⚡ Power 50 · Normal', power: 50 },
+  { name: 'Stone Stomp',   desc: '⚡ Power 40 · Earth',  power: 40 },
+  { name: 'Dino Rush',     desc: '⚡ Power 65 · Normal', power: 65 },
+  { name: 'Ancient Roar',  desc: '🌀 Lowers DEF',        power: 0  },
+];
 
-function sendMove(moveName) {
-  if (!myTurn) return;
-  socket.emit('send_move', { moveName, targetIndex: 0 });
+let attackPhase      = 'idle';
+let selectedAttacker = null;
+let selectedMove     = null;
+let usedAttackers    = new Set();
+
+function enterMyTurn() {
+  myTurn = true;
+  usedAttackers.clear();
+  attackPhase = 'idle';
+  selectedAttacker = null;
+  selectedMove = null;
+  setRotationButtons(true);
+  showMovePrompt('Select one of your vivosaurs to attack.');
+  highlightSelectableVivos();
+  document.getElementById('turn-bar').textContent = '⚔️ Your turn — select a vivosaur!';
 }
 
-socket.on('your_move_sent', ({ moveName }) => {
-  const dmg = MOVE_DAMAGE[moveName] || 0;
-  // Apply damage to first opp AZ slot — opp AZ center slot = slot 3
-  if (oppBattleState && oppBattleState.azSlots[0]) {
-    oppBattleState.azSlots[0].currentLp = Math.max(0,
-      (oppBattleState.azSlots[0].currentLp || oppBattleState.azSlots[0].lp) - dmg);
-    const oppAZPos = oppBattleState.azSlots.length === 1 ? 3 : 1;
-    updateSlotLp('opp', oppAZPos, oppBattleState.azSlots[0]);
-    socket.emit('update_lp', { role:'opp', slotType:'az', slotIndex:0, newLp: oppBattleState.azSlots[0].currentLp });
-  }
-  battleLog(`➤ You used <strong>${moveName}</strong>${dmg ? ` — ${dmg} damage!` : ''}`, 'you');
+function endMyTurn() {
   myTurn = false;
+  attackPhase = 'idle';
+  selectedAttacker = null;
+  selectedMove = null;
+  clearAllHighlights();
+  renderMoveButtons([]);
+  setRotationButtons(false);
   document.getElementById('turn-bar').textContent = `⏳ ${opponentName}'s turn…`;
-  setMoveButtons(false);
-  checkWin();
-});
+  showMovePrompt('');
+}
 
-socket.on('opponent_moved', ({ moveName, moverName }) => {
-  const dmg = MOVE_DAMAGE[moveName] || 0;
-  if (myBattleState && myBattleState.azSlots[0]) {
-    myBattleState.azSlots[0].currentLp = Math.max(0,
-      (myBattleState.azSlots[0].currentLp || myBattleState.azSlots[0].lp) - dmg);
-    const myAZPos = myBattleState.azSlots.length === 1 ? 4 : 2;
-    updateSlotLp('your', myAZPos, myBattleState.azSlots[0]);
+function highlightSelectableVivos() {
+  clearAllHighlights();
+  attackPhase = 'select-attacker';
+  getMyLivingVivosWithPos().forEach(({ pos }) => {
+    const slot = document.getElementById(`your-slot-${pos}`);
+    if (!slot || slot.classList.contains('empty')) return;
+    if (usedAttackers.has(slot.dataset.vivoName)) {
+      slot.classList.add('used-attacker');
+    } else {
+      slot.classList.add('selectable');
+      slot.onclick = () => selectAttacker(pos);
+    }
+  });
+}
+
+function selectAttacker(pos) {
+  const slot = document.getElementById(`your-slot-${pos}`);
+  if (!slot || slot.classList.contains('empty')) return;
+  const vivoName = slot.dataset.vivoName;
+  if (usedAttackers.has(vivoName)) return;
+  const vivo = findMyVivoByName(vivoName);
+  selectedAttacker = { vivo, pos };
+  clearAllHighlights();
+  attackPhase = 'select-move';
+  slot.classList.add('selected-attacker');
+  showMovePrompt(`${vivoName} — choose a move:`);
+  renderMoveButtons(PLACEHOLDER_MOVES);
+  document.getElementById('turn-bar').textContent = `⚔️ ${vivoName} — pick a move!`;
+}
+
+function renderMoveButtons(moves) {
+  const area = document.getElementById('move-area');
+  const prompt = document.getElementById('move-prompt');
+  area.innerHTML = '';
+  area.appendChild(prompt);
+  moves.forEach(move => {
+    const btn = document.createElement('button');
+    btn.className = 'move-btn';
+    btn.innerHTML = `${move.name}<div class="move-sub">${move.desc}</div>`;
+    btn.onclick = () => selectMove(move);
+    area.appendChild(btn);
+  });
+  if (moves.length > 0) {
+    const cancel = document.createElement('button');
+    cancel.className = 'move-btn';
+    cancel.style.cssText = 'flex:0;min-width:auto;padding:12px 16px;color:var(--muted);border-style:dashed;';
+    cancel.innerHTML = 'Cancel';
+    cancel.onclick = () => {
+      selectedAttacker = null; selectedMove = null;
+      attackPhase = 'select-attacker';
+      renderMoveButtons([]);
+      highlightSelectableVivos();
+      showMovePrompt('Select one of your vivosaurs to attack.');
+      document.getElementById('turn-bar').textContent = '⚔️ Your turn — select a vivosaur!';
+    };
+    area.appendChild(cancel);
   }
-  battleLog(`➤ ${moverName} used <strong>${moveName}</strong>${dmg ? ` — ${dmg} damage!` : ''}`, 'opp');
-  myTurn = true;
-  document.getElementById('turn-bar').textContent = '⚔️ Your turn — pick a move!';
-  setMoveButtons(true);
+}
+
+function selectMove(move) {
+  selectedMove = move;
+  attackPhase = 'select-target';
+  clearAllHighlights();
+  const attackerSlot = document.getElementById(`your-slot-${selectedAttacker.pos}`);
+  if (attackerSlot) attackerSlot.classList.add('selected-attacker');
+  showMovePrompt(`${selectedAttacker.vivo.name} → ${move.name} — select a target.`);
+  document.getElementById('turn-bar').textContent = '🎯 Select an opponent to attack!';
+  getOppLivingVivosWithPos().forEach(({ pos }) => {
+    const slot = document.getElementById(`opp-slot-${pos}`);
+    if (!slot || slot.classList.contains('empty')) return;
+    slot.classList.add('targetable');
+    slot.onclick = () => confirmAttack(pos);
+  });
+}
+
+function confirmAttack(targetPos) {
+  if (!selectedAttacker || !selectedMove) return;
+  const targetSlot = document.getElementById(`opp-slot-${targetPos}`);
+  const targetName = targetSlot ? targetSlot.dataset.vivoName : '???';
+  socket.emit('send_move', {
+    moveName: selectedMove.name,
+    attackerName: selectedAttacker.vivo.name,
+    attackerPos: selectedAttacker.pos,
+    targetName, targetPos,
+  });
+}
+
+socket.on('your_move_sent', ({ moveName, attackerName, attackerPos, targetName, targetPos }) => {
+  const dmg = (PLACEHOLDER_MOVES.find(m => m.name === moveName) || {}).power || 0;
+  const targetVivo = findOppVivoByName(targetName);
+  if (targetVivo) {
+    targetVivo.currentLp = Math.max(0, (targetVivo.currentLp ?? targetVivo.lp) - dmg);
+    updateSlotLp('opp', targetPos, targetVivo);
+    if (targetVivo.currentLp <= 0) removeVivo('opp', targetPos);
+  }
+  battleLog(`➤ Your <strong>${attackerName}</strong> used <strong>${moveName}</strong> on ${targetName}${dmg ? ` — ${dmg} damage!` : ''}`, 'you');
+  usedAttackers.add(attackerName);
+  const attackerSlot = document.getElementById(`your-slot-${attackerPos}`);
+  if (attackerSlot) { attackerSlot.classList.remove('selected-attacker','selectable'); attackerSlot.classList.add('used-attacker'); attackerSlot.onclick = null; }
+  selectedAttacker = null; selectedMove = null; attackPhase = 'select-attacker';
+  clearAllHighlights();
+  renderMoveButtons([]);
+  const living = getMyLivingVivosWithPos();
+  const allUsed = living.every(({ pos }) => { const s = document.getElementById(`your-slot-${pos}`); return s && usedAttackers.has(s.dataset.vivoName); });
+  if (allUsed || living.length === 0) { socket.emit('end_turn'); endMyTurn(); }
+  else {
+    highlightSelectableVivos();
+    showMovePrompt('Select another vivosaur, or end your turn.');
+    const area = document.getElementById('move-area');
+    const endBtn = document.createElement('button');
+    endBtn.className = 'move-btn';
+    endBtn.style.cssText = 'background:var(--panel);border-color:var(--accent);color:var(--accent);';
+    endBtn.innerHTML = 'End Turn';
+    endBtn.onclick = () => { socket.emit('end_turn'); endMyTurn(); };
+    area.appendChild(endBtn);
+  }
   checkWin();
 });
 
-socket.on('lp_updated', ({ slotType, slotIndex, newLp }) => {
-  // Opponent telling us their LP changed (their view of our side)
-  // Already handled locally
+socket.on('opponent_moved', ({ moveName, attackerName, targetName, targetPos }) => {
+  const dmg = (PLACEHOLDER_MOVES.find(m => m.name === moveName) || {}).power || 0;
+  const targetVivo = findMyVivoByName(targetName);
+  if (targetVivo) {
+    targetVivo.currentLp = Math.max(0, (targetVivo.currentLp ?? targetVivo.lp) - dmg);
+    updateSlotLp('your', targetPos, targetVivo);
+    if (targetVivo.currentLp <= 0) removeVivo('your', targetPos);
+  }
+  battleLog(`➤ ${attackerName} used <strong>${moveName}</strong> on your ${targetName}${dmg ? ` — ${dmg} damage!` : ''}`, 'opp');
+  checkWin();
 });
+
+socket.on('turn_ended', () => { enterMyTurn(); });
+socket.on('lp_updated', () => {});
 
 // Opponent rotated — update their side of the field
 socket.on('opponent_rotated', ({ azSlots, szSlots }) => {
@@ -1274,14 +1412,17 @@ function updateSlotLp(who, pos, vivo) {
 }
 
 function checkWin() {
-  const oppDown = oppBattleState && oppBattleState.azSlots.every(v => (v.currentLp || v.lp) <= 0);
-  const myDown  = myBattleState  && myBattleState.azSlots.every(v  => (v.currentLp || v.lp) <= 0);
-  if (oppDown) endBattle(true);
-  else if (myDown) endBattle(false);
+  const oppLiving = getOppLivingVivosWithPos().length;
+  const myLiving  = getMyLivingVivosWithPos().length;
+  if (oppLiving === 0) endBattle(true);
+  else if (myLiving === 0) endBattle(false);
 }
 
 function endBattle(won) {
-  setMoveButtons(false);
+  clearAllHighlights();
+  setRotationButtons(false);
+  renderMoveButtons([]);
+  showMovePrompt('');
   document.getElementById('turn-bar').textContent = won ? '🏆 Victory!' : '💀 Defeated…';
   battleLog(won ? '🏆 You win!' : '💀 You were defeated.', 'sys');
   setTimeout(() => {
@@ -1400,12 +1541,71 @@ function rotate(dir, steps) {
   }, 280);
 }
 
-function setRotationButtons(enabled) {
-  document.querySelectorAll('.rot-btn').forEach(b => b.disabled = !enabled);
+function findMyVivoByName(name) {
+  if (!myBattleState) return null;
+  return [...(myBattleState.azSlots||[]), ...(myBattleState.szSlots||[])].find(v => v && v.name === name);
+}
+function findOppVivoByName(name) {
+  if (!oppBattleState) return null;
+  return [...(oppBattleState.azSlots||[]), ...(oppBattleState.szSlots||[])].find(v => v && v.name === name);
+}
+function getMyLivingVivosWithPos() {
+  const results = [];
+  for (let pos = 1; pos <= 6; pos++) {
+    const slot = document.getElementById(`your-slot-${pos}`);
+    if (!slot || slot.classList.contains('empty')) continue;
+    const vivo = findMyVivoByName(slot.dataset.vivoName);
+    if (vivo && (vivo.currentLp ?? vivo.lp) > 0) results.push({ pos, vivo });
+  }
+  return results;
+}
+function getOppLivingVivosWithPos() {
+  const results = [];
+  for (let pos = 1; pos <= 6; pos++) {
+    const slot = document.getElementById(`opp-slot-${pos}`);
+    if (!slot || slot.classList.contains('empty')) continue;
+    const vivo = findOppVivoByName(slot.dataset.vivoName);
+    if (vivo && (vivo.currentLp ?? vivo.lp) > 0) results.push({ pos, vivo });
+  }
+  return results;
+}
+function removeVivo(who, pos) {
+  const slot = document.getElementById(`${who}-slot-${pos}`);
+  if (!slot) return;
+  const name = slot.dataset.vivoName;
+  slot.style.transition = 'opacity .5s';
+  slot.style.opacity = '0';
+  setTimeout(() => {
+    slot.className = 'field-slot empty';
+    slot.innerHTML = '';
+    slot.style.opacity = '';
+    slot.style.transition = '';
+    slot.onclick = null;
+  }, 500);
+  if (who === 'your' && myBattleState) {
+    myBattleState.azSlots = (myBattleState.azSlots||[]).filter(v => v && v.name !== name);
+    myBattleState.szSlots = (myBattleState.szSlots||[]).filter(v => v && v.name !== name);
+    if (myBattleState.posMap) delete myBattleState.posMap[pos];
+  } else if (who === 'opp' && oppBattleState) {
+    oppBattleState.azSlots = (oppBattleState.azSlots||[]).filter(v => v && v.name !== name);
+    oppBattleState.szSlots = (oppBattleState.szSlots||[]).filter(v => v && v.name !== name);
+    if (oppBattleState.posMap) delete oppBattleState.posMap[pos];
+  }
+  battleLog(`💀 ${name} fainted!`, 'sys');
+}
+function clearAllHighlights() {
+  document.querySelectorAll('.field-slot').forEach(s => {
+    s.classList.remove('selectable','selected-attacker','targetable');
+    if (!s.classList.contains('used-attacker')) s.onclick = null;
+  });
+}
+function showMovePrompt(text) {
+  const p = document.getElementById('move-prompt');
+  if (p) p.textContent = text;
 }
 
-function setMoveButtons(enabled) {
-  document.querySelectorAll('.move-btn').forEach(b => b.disabled = !enabled);
+function setRotationButtons(enabled) {
+  document.querySelectorAll('.rot-btn').forEach(b => b.disabled = !enabled);
 }
 
 function battleLog(msg, cls) {
