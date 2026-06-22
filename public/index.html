@@ -1418,8 +1418,9 @@ function closeConfirm() {
   confirmAction = null;
 }
 function confirmYes() {
+  const action = confirmAction; // save before closeConfirm nulls it
   closeConfirm();
-  if (confirmAction) confirmAction();
+  if (action) action();
 }
 
 // ════════════════════════════════════════
