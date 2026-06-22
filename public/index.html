@@ -308,10 +308,41 @@
     .fs-zone-tag.sz { background: var(--sz-color); color: #fff; }
 
     .fs-name { font-size: .82rem; font-weight: 600; color: var(--text); line-height: 1.2; }
-    .fs-hp-bar-bg { width: 100%; background: #2a2a3e; border-radius: 3px; height: 6px; overflow: hidden; }
+    .fs-hp-bar-bg { width: 64px; background: #2a2a3e; border-radius: 3px; height: 6px; overflow: hidden; }
     .fs-hp-bar { height: 100%; border-radius: 3px; transition: width .4s, background .4s; }
     .fs-lp { font-size: .65rem; color: var(--muted); }
     .fs-stats { font-size: .6rem; color: var(--muted); }
+
+    /* Rotation buttons */
+    .rotation-area {
+      display: flex; gap: 6px; align-items: center; flex-shrink: 0;
+      justify-content: center; flex-wrap: wrap;
+    }
+    .rotation-label {
+      font-size: .68rem; color: var(--muted); text-transform: uppercase;
+      letter-spacing: .08em; width: 100%; text-align: center; margin-bottom: 2px;
+    }
+    .rot-group { display: flex; gap: 5px; align-items: center; }
+    .rot-group-label { font-size: .65rem; color: var(--muted); margin: 0 2px; }
+    .rot-btn {
+      width: 44px; height: 44px; border-radius: 50%;
+      border: 2px solid var(--border); background: var(--sidebar);
+      color: var(--text); font-family: 'Inter', sans-serif;
+      font-size: .72rem; font-weight: 700;
+      cursor: pointer; transition: all .15s;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 1px; line-height: 1;
+    }
+    .rot-btn:hover:not(:disabled) { border-color: var(--accent); background: var(--panel); color: var(--accent); }
+    .rot-btn:disabled { opacity: .35; cursor: default; }
+    .rot-btn .rot-arrow { font-size: .9rem; line-height: 1; }
+    .rot-btn .rot-num   { font-size: .65rem; line-height: 1; }
+    .rot-divider { width: 1px; height: 28px; background: var(--border); margin: 0 4px; }
+
+    /* Slot transition for rotation animation */
+    .field-slot { transition: border-color .2s, background .2s, opacity .2s; }
+    .field-slot.rotating { opacity: 0; transform: scale(.92); transition: opacity .25s, transform .25s; }
+    .field-slot.rotating-in { opacity: 1; transform: scale(1); transition: opacity .35s .25s, transform .35s .25s; }
 
     .field-divider {
       width: 2px; background: var(--border); border-radius: 2px;
@@ -505,8 +536,8 @@
     <div class="formation-instructions">
       Drag to reorder your vivosaurs.
     </div>
-    <div style="text-align:center">
-      <div style="font-size:.75rem;color:var(--muted);margin-bottom:4px">Time remaining</div>
+    <div style="display:flex;flex-direction:column;align-items:center;gap:2px">
+      <div style="font-size:.72rem;color:var(--muted);letter-spacing:.08em;text-transform:uppercase">Time Remaining</div>
       <div class="formation-timer" id="fs-timer">75</div>
     </div>
 
@@ -595,6 +626,34 @@
 
     <!-- Turn status -->
     <div class="turn-bar" id="turn-bar">Waiting…</div>
+
+    <!-- Rotation buttons -->
+    <div class="rotation-area" id="rotation-area">
+      <div class="rotation-label">Rotate Formation</div>
+      <div class="rot-group">
+        <button class="rot-btn" disabled id="rot-ccw-3" onclick="rotate('ccw',3)" title="Counterclockwise 3">
+          <span class="rot-arrow">↺</span><span class="rot-num">3</span>
+        </button>
+        <button class="rot-btn" disabled id="rot-ccw-2" onclick="rotate('ccw',2)" title="Counterclockwise 2">
+          <span class="rot-arrow">↺</span><span class="rot-num">2</span>
+        </button>
+        <button class="rot-btn" disabled id="rot-ccw-1" onclick="rotate('ccw',1)" title="Counterclockwise 1">
+          <span class="rot-arrow">↺</span><span class="rot-num">1</span>
+        </button>
+      </div>
+      <div class="rot-divider"></div>
+      <div class="rot-group">
+        <button class="rot-btn" disabled id="rot-cw-1" onclick="rotate('cw',1)" title="Clockwise 1">
+          <span class="rot-arrow">↻</span><span class="rot-num">1</span>
+        </button>
+        <button class="rot-btn" disabled id="rot-cw-2" onclick="rotate('cw',2)" title="Clockwise 2">
+          <span class="rot-arrow">↻</span><span class="rot-num">2</span>
+        </button>
+        <button class="rot-btn" disabled id="rot-cw-3" onclick="rotate('cw',3)" title="Clockwise 3">
+          <span class="rot-arrow">↻</span><span class="rot-num">3</span>
+        </button>
+      </div>
+    </div>
 
     <!-- Moves -->
     <div class="move-area" id="move-area">
@@ -1051,6 +1110,7 @@ socket.on('battle_start', ({ yourFormation, oppFormation, yourState, oppState, y
     ? '⚔️ Your turn — pick a move!'
     : `⏳ ${opponentName}'s turn…`;
   setMoveButtons(yourTurn);
+  setRotationButtons(true); // rotation always available
 
   battleLog(`⚔️ Battle vs ${opponentName} — Begin!`, 'sys');
   if (yourState.szSlots.length) {
@@ -1180,9 +1240,25 @@ socket.on('lp_updated', ({ slotType, slotIndex, newLp }) => {
   // Already handled locally
 });
 
+// Opponent rotated — update their side of the field
+socket.on('opponent_rotated', ({ azSlots, szSlots }) => {
+  oppBattleState.azSlots = azSlots;
+  oppBattleState.szSlots = szSlots;
+
+  // Animate opponent field
+  const oppSlots = document.querySelectorAll('[id^="opp-slot-"]');
+  oppSlots.forEach(s => s.classList.add('rotating'));
+  setTimeout(() => {
+    renderField('opp', oppBattleState);
+    oppSlots.forEach(s => s.classList.remove('rotating'));
+    battleLog(`↻ ${opponentName} rotated their formation`, 'opp');
+  }, 300);
+});
+
 socket.on('opponent_disconnected', () => {
   battleLog('⚠️ Opponent disconnected.', 'sys');
   setMoveButtons(false);
+  setRotationButtons(false);
   document.getElementById('turn-bar').textContent = 'Opponent left.';
 });
 
@@ -1212,6 +1288,120 @@ function endBattle(won) {
     document.getElementById('battle-screen').classList.remove('active');
     showPanel('home');
   }, 3000);
+}
+
+// ════════════════════════════════════════
+//  ROTATION
+// ════════════════════════════════════════
+// The 6 positions in CCW order (vivosaurs move UP in SZ, DOWN in AZ when CCW):
+// Counterclockwise step: each vivo moves to next in this sequence:
+//   SZ-Top(1) → SZ-Mid(3) → SZ-Bot(5) → AZ-Bot(6) → AZ-Mid(4) → AZ-Top(2) → SZ-Top(1)
+// So CCW: 1→3, 3→5, 5→6, 6→4, 4→2, 2→1
+// CW is the reverse: 1→2, 2→4, 4→6, 6→5, 5→3, 3→1
+
+const CCW_MAP = { 1:3, 3:5, 5:6, 6:4, 4:2, 2:1 };
+const CW_MAP  = { 1:2, 2:4, 4:6, 6:5, 5:3, 3:1 };
+
+let isAnimating = false;
+
+function rotate(dir, steps) {
+  if (isAnimating || !myBattleState) return;
+  isAnimating = true;
+
+  // Disable rotation buttons during animation
+  setRotationButtons(false);
+
+  // Build current position map: posNum → vivoState (or null)
+  const posMap = {}; // pos → vivo
+  const map = dir === 'ccw' ? CCW_MAP : CW_MAP;
+
+  // Collect all vivosaurs with their current positions
+  // We track positions in myBattleState
+  if (!myBattleState.posMap) {
+    // Initialize position map from current state
+    myBattleState.posMap = {};
+    // Use the current renderField logic to figure out where they are
+    // AZ: 1 vivo → pos4, 2 vivos → pos2+pos6
+    // SZ: 1 vivo → pos3, 2 vivos → pos1+pos5
+    const azCount = myBattleState.azSlots.length;
+    const szCount = myBattleState.szSlots.length;
+    const azPos = azCount === 1 ? [4] : [2, 6];
+    const szPos = szCount === 1 ? [3] : [1, 5];
+    myBattleState.azSlots.forEach((v, i) => { myBattleState.posMap[azPos[i]] = { ...v, zone: 'az' }; });
+    myBattleState.szSlots.forEach((v, i) => { myBattleState.posMap[szPos[i]] = { ...v, zone: 'sz' }; });
+  }
+
+  // Apply N steps of rotation
+  let current = { ...myBattleState.posMap };
+  for (let s = 0; s < steps; s++) {
+    const next = {};
+    for (const [pos, vivo] of Object.entries(current)) {
+      const newPos = map[parseInt(pos)];
+      // Determine new zone based on new position
+      // Odd positions (1,3,5) = SZ, Even (2,4,6) = AZ
+      const newZone = newPos % 2 === 0 ? 'az' : 'sz';
+      next[newPos] = { ...vivo, zone: newZone };
+    }
+    current = next;
+  }
+
+  // Animate: fade out → update → fade in
+  const allSlots = document.querySelectorAll('[id^="your-slot-"]');
+  allSlots.forEach(s => s.classList.add('rotating'));
+
+  setTimeout(() => {
+    // Update state
+    myBattleState.posMap = current;
+    myBattleState.azSlots = [];
+    myBattleState.szSlots = [];
+    // Sort by position to fill slots in order
+    [2, 4, 6].forEach(pos => {
+      if (current[pos]) myBattleState.azSlots.push(current[pos]);
+    });
+    [1, 3, 5].forEach(pos => {
+      if (current[pos]) myBattleState.szSlots.push(current[pos]);
+    });
+
+    // Clear and re-render your side
+    for (let i = 1; i <= 6; i++) {
+      const slot = document.getElementById(`your-slot-${i}`);
+      slot.className = 'field-slot empty';
+      slot.innerHTML = '';
+      slot.classList.add('rotating');
+    }
+
+    // Place vivosaurs in new positions
+    for (const [pos, vivo] of Object.entries(current)) {
+      fillSlot('your', parseInt(pos), vivo, vivo.zone);
+      const slot = document.getElementById(`your-slot-${pos}`);
+      slot.classList.add('rotating');
+    }
+
+    // Fade back in
+    setTimeout(() => {
+      document.querySelectorAll('[id^="your-slot-"]').forEach(s => {
+        s.classList.remove('rotating');
+      });
+      isAnimating = false;
+      // Re-enable rotation buttons (always available)
+      setRotationButtons(true);
+      // Re-enable move buttons only if it's our turn
+      setMoveButtons(myTurn);
+
+      // Tell opponent about our rotation
+      socket.emit('player_rotated', {
+        posMap: current,
+        azSlots: myBattleState.azSlots,
+        szSlots: myBattleState.szSlots,
+      });
+
+      battleLog(`↻ You rotated ${dir === 'ccw' ? 'counterclockwise' : 'clockwise'} ${steps} step${steps>1?'s':''}`, 'sys');
+    }, 400);
+  }, 280);
+}
+
+function setRotationButtons(enabled) {
+  document.querySelectorAll('.rot-btn').forEach(b => b.disabled = !enabled);
 }
 
 function setMoveButtons(enabled) {
