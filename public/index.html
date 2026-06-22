@@ -252,6 +252,7 @@
     #battle-screen {
       position: fixed; inset: 0; z-index: 600;
       background: var(--bg); display: none; flex-direction: column;
+      overflow: hidden;
     }
     #battle-screen.active { display: flex; }
 
@@ -382,6 +383,70 @@
     }
     .end-turn-btn:hover:not(:disabled) { background: rgba(255,193,7,.28); border-color: #ffc107; }
     .end-turn-btn:disabled { opacity: .35; cursor: default; }
+
+    .forfeit-btn {
+      width: 52px; height: 52px; border-radius: 8px;
+      border: 2px solid #7a1a1a;
+      background: rgba(233,69,96,.1);
+      color: #e94560;
+      font-family: 'Inter', sans-serif; font-size: .68rem; font-weight: 700;
+      cursor: pointer; transition: all .15s; line-height: 1.2;
+      text-transform: uppercase; letter-spacing: .04em;
+    }
+    .forfeit-btn:hover { background: rgba(233,69,96,.25); border-color: #e94560; }
+
+    /* Battle result banner */
+    .battle-result-banner {
+      position: absolute; top: 0; left: 0; right: 0;
+      background: var(--sidebar); border-bottom: 2px solid var(--accent);
+      padding: 12px 20px; display: none;
+      align-items: center; gap: 16px; z-index: 50;
+    }
+    .battle-result-banner.visible { display: flex; }
+    .battle-result-text { flex: 1; font-size: .88rem; color: var(--text); }
+    .battle-result-text strong { color: var(--accent); }
+    .battle-result-text.loss strong { color: var(--accent2); }
+    .btn-close-battle {
+      padding: 8px 20px; border-radius: 6px; border: none;
+      background: var(--accent); color: #1a1a2e;
+      font-family: 'Inter', sans-serif; font-size: .85rem; font-weight: 700;
+      cursor: pointer; white-space: nowrap;
+    }
+    .btn-close-battle:hover { background: #d4b46a; }
+
+    /* Inline confirmation popup */
+    .confirm-popup {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.6);
+      display: none; align-items: center; justify-content: center;
+      z-index: 800;
+    }
+    .confirm-popup.visible { display: flex; }
+    .confirm-box {
+      background: var(--sidebar); border: 1px solid var(--border);
+      border-radius: 10px; padding: 24px 28px; text-align: center;
+      max-width: 320px; width: 100%;
+    }
+    .confirm-box h3 {
+      font-family: 'Bebas Neue', sans-serif; font-size: 1.4rem;
+      color: var(--accent); letter-spacing: .05em; margin-bottom: 8px;
+    }
+    .confirm-box p { font-size: .85rem; color: var(--muted); margin-bottom: 20px; }
+    .confirm-btns { display: flex; gap: 10px; }
+    .confirm-yes {
+      flex: 1; padding: 10px; border-radius: 6px; border: none;
+      background: var(--accent2); color: #fff;
+      font-family: 'Inter', sans-serif; font-weight: 700; font-size: .88rem;
+      cursor: pointer;
+    }
+    .confirm-yes:hover { background: #ff2d55; }
+    .confirm-no {
+      flex: 1; padding: 10px; border-radius: 6px;
+      border: 1px solid var(--border); background: transparent;
+      color: var(--muted); font-family: 'Inter', sans-serif;
+      font-size: .88rem; cursor: pointer;
+    }
+    .confirm-no:hover { border-color: var(--accent); color: var(--accent); }
 
     /* Slot transition for rotation animation */
     .field-slot { transition: border-color .2s, background .2s, opacity .2s; }
@@ -656,6 +721,12 @@
     <span style="margin-left:auto;font-size:.75rem;color:var(--muted)">Fossil Fighter Showdown</span>
   </div>
 
+  <!-- Result banner (shown when battle ends) -->
+  <div class="battle-result-banner" id="battle-result-banner">
+    <div class="battle-result-text" id="battle-result-text"></div>
+    <button class="btn-close-battle" onclick="closeBattle()">Close Battle</button>
+  </div>
+
   <div class="battle-body">
     <!-- Field -->
     <div class="battle-field">
@@ -696,6 +767,10 @@
     <!-- Rotation buttons -->
     <div class="rotation-area" id="rotation-area">
       <div class="rotation-label">Rotate Formation</div>
+      <button class="forfeit-btn" id="forfeit-btn" onclick="confirmForfeit()" title="Forfeit Battle">
+        For<br>feit
+      </button>
+      <div class="rot-divider"></div>
       <div class="rot-group">
         <button class="rot-btn" disabled id="rot-ccw-3" onclick="rotate('ccw',3)" title="Counterclockwise 3">
           <span class="rot-arrow">↺</span><span class="rot-num">3</span>
@@ -708,7 +783,7 @@
         </button>
       </div>
       <div class="rot-divider"></div>
-      <button class="end-turn-btn" id="end-turn-btn" onclick="manualEndTurn()" disabled title="End Turn">
+      <button class="end-turn-btn" id="end-turn-btn" onclick="confirmEndTurn()" disabled title="End Turn">
         End<br>Turn
       </button>
       <div class="rot-divider"></div>
@@ -733,6 +808,18 @@
     <!-- Log -->
     <div class="battle-log" id="battle-log">
       <p class="sys">Battle log will appear here.</p>
+    </div>
+  </div>
+
+  <!-- Confirmation popup (end turn / forfeit) -->
+  <div class="confirm-popup" id="confirm-popup">
+    <div class="confirm-box">
+      <h3 id="confirm-title">Are you sure?</h3>
+      <p id="confirm-msg">This action cannot be undone.</p>
+      <div class="confirm-btns">
+        <button class="confirm-no" onclick="closeConfirm()">No</button>
+        <button class="confirm-yes" id="confirm-yes-btn" onclick="confirmYes()">Yes</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1308,10 +1395,111 @@ let selectedMove     = null;
 let usedAttackers    = new Set();
 let attackPending    = false; // prevents spam-clicking before server confirms
 
+// ════════════════════════════════════════
+//  CONFIRMATION POPUP
+// ════════════════════════════════════════
+let confirmAction = null; // function to call on Yes
+
+function showConfirm(title, msg, onYes) {
+  confirmAction = onYes;
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').textContent = msg;
+  document.getElementById('confirm-popup').classList.add('visible');
+}
+function closeConfirm() {
+  document.getElementById('confirm-popup').classList.remove('visible');
+  confirmAction = null;
+}
+function confirmYes() {
+  closeConfirm();
+  if (confirmAction) confirmAction();
+}
+
+// ════════════════════════════════════════
+//  END TURN (with confirm)
+// ════════════════════════════════════════
+function confirmEndTurn() {
+  if (!myTurn) return;
+  showConfirm('End Turn?', 'Are you sure you want to end your turn?', () => {
+    socket.emit('end_turn');
+    endMyTurn();
+  });
+}
+
+// Keep manualEndTurn for internal use (no confirm needed e.g. after all attacked)
 function manualEndTurn() {
   if (!myTurn) return;
   socket.emit('end_turn');
   endMyTurn();
+}
+
+// ════════════════════════════════════════
+//  FORFEIT
+// ════════════════════════════════════════
+function confirmForfeit() {
+  showConfirm('Forfeit Battle?', 'You will lose the battle. This cannot be undone.', () => {
+    socket.emit('forfeit_battle');
+    showBattleResult(false, true, currentUsername);
+  });
+}
+
+socket.on('opponent_forfeited', ({ forfeiterName }) => {
+  showBattleResult(true, true, forfeiterName);
+});
+
+// ════════════════════════════════════════
+//  BATTLE RESULT BANNER
+// ════════════════════════════════════════
+function showBattleResult(won, forfeited, forfeiterName) {
+  clearAllHighlights();
+  hideAllStatBlocks();
+  setRotationButtons(false);
+  document.getElementById('end-turn-btn').disabled = true;
+  renderMoveButtons([]);
+  showMovePrompt('');
+
+  const banner = document.getElementById('battle-result-banner');
+  const text   = document.getElementById('battle-result-text');
+  banner.classList.add('visible');
+
+  if (forfeited) {
+    if (won) {
+      text.innerHTML = `🏆 <strong>${forfeiterName}</strong> forfeited the battle. You win!`;
+      text.className = 'battle-result-text';
+      battleLog(`🏳️ ${forfeiterName} forfeited. You win!`, 'you');
+    } else {
+      text.innerHTML = `🏳️ You forfeited. <strong>${opponentName}</strong> wins.`;
+      text.className = 'battle-result-text loss';
+      battleLog(`🏳️ You forfeited.`, 'sys');
+    }
+    document.getElementById('turn-bar').textContent = 'Battle forfeited.';
+  } else {
+    if (won) {
+      text.innerHTML = `🏆 Victory! All of <strong>${opponentName}</strong>'s vivosaurs have fainted.`;
+      text.className = 'battle-result-text';
+      battleLog('🏆 You win!', 'you');
+    } else {
+      text.innerHTML = `💀 Defeated. All of your vivosaurs have fainted. <strong>${opponentName}</strong> wins.`;
+      text.className = 'battle-result-text loss';
+      battleLog('💀 You were defeated.', 'sys');
+    }
+    document.getElementById('turn-bar').textContent = won ? '🏆 Victory!' : '💀 Defeated…';
+  }
+}
+
+function closeBattle() {
+  document.getElementById('battle-screen').classList.remove('active');
+  document.getElementById('battle-result-banner').classList.remove('visible');
+  showPanel('home');
+  // Reset battle state
+  myBattleState = null; oppBattleState = null;
+  myTurn = false; attackPending = false;
+  usedAttackers.clear();
+  selectedAttacker = null; selectedMove = null;
+  attackPhase = 'idle';
+  // Re-show battle button
+  document.getElementById('battle-btn-area').style.display = 'block';
+  document.getElementById('battle-waiting').style.display = 'none';
 }
 
 function enterMyTurn() {
@@ -1615,17 +1803,7 @@ function checkWin() {
 }
 
 function endBattle(won) {
-  clearAllHighlights();
-  setRotationButtons(false);
-  document.getElementById('end-turn-btn').disabled = true;
-  renderMoveButtons([]);
-  showMovePrompt('');
-  document.getElementById('turn-bar').textContent = won ? '🏆 Victory!' : '💀 Defeated…';
-  battleLog(won ? '🏆 You win!' : '💀 You were defeated.', 'sys');
-  setTimeout(() => {
-    document.getElementById('battle-screen').classList.remove('active');
-    showPanel('home');
-  }, 3000);
+  showBattleResult(won, false, null);
 }
 
 // ════════════════════════════════════════
