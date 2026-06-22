@@ -176,6 +176,16 @@ io.on("connection", (socket) => {
     };
   }
 
+  // ── Relay rotation to opponent ──
+  socket.on('player_rotated', ({ azSlots, szSlots }) => {
+    const battleId = socket.battleId;
+    if (!battleId || !battles[battleId]) return;
+    const battle = battles[battleId];
+    const oppRole = socket.role === 'p1' ? 'p2' : 'p1';
+    battle[oppRole].emit('opponent_rotated', { azSlots, szSlots });
+    console.log(`${socket.playerName} rotated formation`);
+  });
+
   // ── Move handling (placeholder until real moves added) ──
   socket.on("send_move", ({ moveName, targetIndex }) => {
     const battleId = socket.battleId;
