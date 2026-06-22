@@ -1166,6 +1166,7 @@ socket.on('battle_start', ({ yourFormation, oppFormation, yourState, oppState, y
 
   renderField('your', yourState);
   renderField('opp', oppState);
+  attachStatHovers();
 
   document.getElementById('turn-bar').textContent = yourTurn
     ? '⚔️ Your turn — pick a move!'
@@ -1305,6 +1306,7 @@ let attackPhase      = 'idle';
 let selectedAttacker = null;
 let selectedMove     = null;
 let usedAttackers    = new Set();
+let attackPending    = false; // prevents spam-clicking before server confirms
 
 function manualEndTurn() {
   if (!myTurn) return;
@@ -1315,6 +1317,7 @@ function manualEndTurn() {
 function enterMyTurn() {
   myTurn = true;
   usedAttackers.clear();
+  attackPending = false;
   attackPhase = 'idle';
   selectedAttacker = null;
   selectedMove = null;
@@ -1327,6 +1330,7 @@ function enterMyTurn() {
 
 function endMyTurn() {
   myTurn = false;
+  attackPending = false;
   attackPhase = 'idle';
   selectedAttacker = null;
   selectedMove = null;
@@ -1362,6 +1366,32 @@ function showStatBlock(who, pos, visible) {
 
 function hideAllStatBlocks() {
   document.querySelectorAll('.fs-stat-block').forEach(b => b.classList.remove('visible'));
+}
+
+// Attach hover-to-view-stats on every occupied slot
+// Called after renderField so slots exist in DOM
+function attachStatHovers() {
+  for (let pos = 1; pos <= 6; pos++) {
+    ['your','opp'].forEach(who => {
+      const slot = document.getElementById(`${who}-slot-${pos}`);
+      if (!slot) return;
+      // Use data attribute to avoid stacking listeners
+      if (slot.dataset.statHover) return;
+      slot.dataset.statHover = '1';
+      slot.addEventListener('mouseenter', () => {
+        if (slot.classList.contains('empty')) return;
+        // Hide all stat blocks, then show this one
+        hideAllStatBlocks();
+        showStatBlock(who, pos, true);
+      });
+      slot.addEventListener('mouseleave', () => {
+        // Only hide if not selected-attacker (keep attacker stats visible)
+        if (!slot.classList.contains('selected-attacker')) {
+          showStatBlock(who, pos, false);
+        }
+      });
+    });
+  }
 }
 
 function selectAttacker(pos) {
@@ -1458,15 +1488,18 @@ function selectMove(move) {
     const slot = document.getElementById(`opp-slot-${pos}`);
     if (!slot || slot.classList.contains('empty')) return;
     slot.classList.add('targetable');
-    // Show opp stats on hover
-    slot.onmouseenter = () => showStatBlock('opp', pos, true);
-    slot.onmouseleave = () => showStatBlock('opp', pos, false);
     slot.onclick = () => confirmAttack(pos);
   });
 }
 
 function confirmAttack(targetPos) {
   if (!selectedAttacker || !selectedMove) return;
+  if (attackPending) return;
+  attackPending = true;
+  clearAllHighlights();
+  hideAllStatBlocks();
+  renderMoveButtons([]);
+  showMovePrompt('Waiting…');
   const targetSlot = document.getElementById(`opp-slot-${targetPos}`);
   const targetName = targetSlot ? targetSlot.dataset.vivoName : '???';
   socket.emit('send_move', {
@@ -1478,6 +1511,7 @@ function confirmAttack(targetPos) {
 }
 
 socket.on('your_move_sent', ({ moveName, attackerName, attackerPos, targetName, targetPos }) => {
+  attackPending = false;
   const dmg = (PLACEHOLDER_MOVES.find(m => m.name === moveName) || {}).power || 0;
   const targetVivo = findOppVivoByName(targetName);
   if (targetVivo) {
@@ -1488,24 +1522,34 @@ socket.on('your_move_sent', ({ moveName, attackerName, attackerPos, targetName, 
   battleLog(`➤ Your <strong>${attackerName}</strong> used <strong>${moveName}</strong> on ${targetName}${dmg ? ` — ${dmg} damage!` : ''}`, 'you');
   usedAttackers.add(attackerName);
   const attackerSlot = document.getElementById(`your-slot-${attackerPos}`);
-  if (attackerSlot) { attackerSlot.classList.remove('selected-attacker','selectable'); attackerSlot.classList.add('used-attacker'); attackerSlot.onclick = null; }
+  if (attackerSlot) {
+    attackerSlot.classList.remove('selected-attacker','selectable');
+    attackerSlot.classList.add('used-attacker');
+    attackerSlot.onclick = null;
+  }
   selectedAttacker = null; selectedMove = null; attackPhase = 'select-attacker';
   clearAllHighlights();
+  hideAllStatBlocks();
   renderMoveButtons([]);
+
+  // Check if any vivosaurs still available to attack
   const living = getMyLivingVivosWithPos();
-  const allUsed = living.every(({ pos }) => { const s = document.getElementById(`your-slot-${pos}`); return s && usedAttackers.has(s.dataset.vivoName); });
-  if (allUsed || living.length === 0) { socket.emit('end_turn'); endMyTurn(); }
-  else {
+  const anyUnused = living.some(({ pos }) => {
+    const s = document.getElementById(`your-slot-${pos}`);
+    return s && !usedAttackers.has(s.dataset.vivoName);
+  });
+
+  if (anyUnused) {
     highlightSelectableVivos();
-    showMovePrompt('Select another vivosaur, or end your turn.');
-    const area = document.getElementById('move-area');
-    const endBtn = document.createElement('button');
-    endBtn.className = 'move-btn';
-    endBtn.style.cssText = 'background:var(--panel);border-color:var(--accent);color:var(--accent);';
-    endBtn.innerHTML = 'End Turn';
-    endBtn.onclick = () => { socket.emit('end_turn'); endMyTurn(); };
-    area.appendChild(endBtn);
+    showMovePrompt('Select another vivosaur to attack, or end your turn.');
+  } else {
+    // All attacked — keep rotation + end turn active, but no more attackers to pick
+    showMovePrompt('All vivosaurs have attacked. Rotate or end your turn.');
+    document.getElementById('turn-bar').textContent = '⚔️ Rotate or end your turn.';
   }
+  // Rotation and End Turn always stay enabled throughout your turn
+  setRotationButtons(true);
+  document.getElementById('end-turn-btn').disabled = false;
   checkWin();
 });
 
@@ -1535,6 +1579,7 @@ socket.on('opponent_rotated', ({ azSlots, szSlots }) => {
 
   setTimeout(() => {
     renderField('opp', oppBattleState);
+    attachStatHovers();
     setTimeout(() => {
       oppSlotEls.forEach(s => { s.style.transition = 'opacity .3s'; s.style.opacity = '1'; });
       battleLog(`↻ ${opponentName} rotated their formation`, 'opp');
@@ -1669,6 +1714,7 @@ function rotate(dir, steps) {
       const slot = document.getElementById(`your-slot-${pos}`);
       slot.classList.add('rotating');
     }
+    attachStatHovers();
 
     // Fade back in
     setTimeout(() => {
