@@ -198,6 +198,17 @@ io.on("connection", (socket) => {
     console.log(`${socket.playerName}: ${attackerName} used ${moveName} on ${targetName}`);
   });
 
+  // ── Forfeit ──
+  socket.on('forfeit_battle', () => {
+    const battleId = socket.battleId;
+    if (!battleId || !battles[battleId]) return;
+    const battle = battles[battleId];
+    const oppRole = socket.role === 'p1' ? 'p2' : 'p1';
+    battle[oppRole].emit('opponent_forfeited', { forfeiterName: socket.playerName });
+    delete battles[battleId];
+    console.log(`${socket.playerName} forfeited`);
+  });
+
   // ── End turn ──
   socket.on("end_turn", () => {
     const battleId = socket.battleId;
