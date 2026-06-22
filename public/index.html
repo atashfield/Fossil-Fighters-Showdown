@@ -557,7 +557,7 @@
 
     /* ── VIVOSAUR HOVER CARD ── */
     .vivo-hover-card {
-      position: fixed; z-index: 2000; width: 300px;
+      position: fixed; z-index: 2000; width: 380px;
       background: #0d1b2e; border: 1px solid var(--border);
       border-radius: 12px; padding: 14px 16px;
       box-shadow: 0 8px 32px rgba(0,0,0,.6);
@@ -1217,9 +1217,23 @@ function showVivoHoverCard(v, e) {
   const movesSection = document.getElementById('vhc-moves-section');
   if (v.moves && v.moves.length > 0) {
     movesSection.style.display = 'block';
-    movesList.innerHTML = v.moves.map(m => {
+    // Sort: 1=damage, 2=buff/debuff/passive, 3=healing, 4=team — each group ascending FP
+    function getMoveGroup(m) {
+      const cat = (m.category || '').toLowerCase();
+      if (cat === 'team') return 4;
+      if (m.dmg !== null && m.dmg !== undefined) return 1;
+      const eff = (m.effect || '').toLowerCase();
+      if (eff.includes('recover lp') || eff.includes('give lp') || eff.includes('restore lp')) return 3;
+      return 2;
+    }
+    const sortedMoves = [...v.moves].sort((a, b) => {
+      const ga = getMoveGroup(a), gb = getMoveGroup(b);
+      if (ga !== gb) return ga - gb;
+      return (a.fp ?? 0) - (b.fp ?? 0);
+    });
+    movesList.innerHTML = sortedMoves.map(m => {
       const catClass = (m.category || 'standard').toLowerCase();
-      const fpHtml = m.fp !== null && m.fp !== undefined ? `FP <span>${m.fp}</span>` : '';
+      const fpHtml  = m.fp  !== null && m.fp  !== undefined ? `FP <span>${m.fp}</span>`  : '';
       const dmgHtml = m.dmg !== null && m.dmg !== undefined ? `DMG <span>${m.dmg}</span>` : '';
       const effectHtml = m.effect ? `<div class="vhc-move-effect">${m.effect}</div>` : '';
       return `
@@ -1243,7 +1257,7 @@ function showVivoHoverCard(v, e) {
 function positionHoverCard(e) {
   const card = document.getElementById('vivo-hover-card');
   const margin = 12;
-  const cw = card.offsetWidth || 300;
+  const cw = card.offsetWidth || 380;
   const ch = card.offsetHeight || 400;
   const vw = window.innerWidth;
   const vh = window.innerHeight;
