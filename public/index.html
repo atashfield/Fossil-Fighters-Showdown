@@ -1405,15 +1405,41 @@ socket.on('turn_ended', () => { enterMyTurn(); });
 socket.on('lp_updated', () => {});
 
 // Opponent rotated — update their side of the field
-socket.on('opponent_rotated', ({ azSlots, szSlots }) => {
+socket.on('opponent_rotated', ({ posMap, azSlots, szSlots }) => {
   oppBattleState.azSlots = azSlots;
   oppBattleState.szSlots = szSlots;
+  oppBattleState.posMap  = posMap;
 
   // Animate opponent field
   const oppSlots = document.querySelectorAll('[id^="opp-slot-"]');
   oppSlots.forEach(s => s.classList.add('rotating'));
+
   setTimeout(() => {
-    renderField('opp', oppBattleState);
+    // Clear all opp slots
+    for (let i = 1; i <= 6; i++) {
+      const slot = document.getElementById(`opp-slot-${i}`);
+      slot.className = 'field-slot empty';
+      slot.innerHTML = '';
+      slot.onclick = null;
+    }
+
+    // Place vivosaurs using the exact posMap from the rotating player
+    // Their posMap is from their own perspective (their AZ = even cols, their SZ = odd cols)
+    // On our screen their AZ should be on the LEFT (closest to us), SZ on the RIGHT
+    // Their pos mapping: odd=SZ, even=AZ
+    // We mirror: their pos 2→our pos 3, 4→1 or 5, 6→5 or 1 ... 
+    // Simpler: mirror even↔odd within same row
+    // Row mapping: pos1&2=row1, pos3&4=row2, pos5&6=row3
+    // Their AZ(even) → our left col (odd), their SZ(odd) → our right col (even)
+    const mirrorPos = { 1:2, 2:1, 3:4, 4:3, 5:6, 6:5 };
+
+    for (const [theirPos, vivo] of Object.entries(posMap)) {
+      const ourPos = mirrorPos[parseInt(theirPos)];
+      // zone: even positions on THEIR side = AZ, but mirrored to left on ours
+      const zone = vivo.zone;
+      fillSlot('opp', ourPos, vivo, zone);
+    }
+
     oppSlots.forEach(s => s.classList.remove('rotating'));
     battleLog(`↻ ${opponentName} rotated their formation`, 'opp');
   }, 300);
@@ -1421,8 +1447,10 @@ socket.on('opponent_rotated', ({ azSlots, szSlots }) => {
 
 socket.on('opponent_disconnected', () => {
   battleLog('⚠️ Opponent disconnected.', 'sys');
-  setMoveButtons(false);
+  clearAllHighlights();
+  renderMoveButtons([]);
   setRotationButtons(false);
+  document.getElementById('end-turn-btn').disabled = true;
   document.getElementById('turn-bar').textContent = 'Opponent left.';
 });
 
@@ -1551,10 +1579,11 @@ function rotate(dir, steps) {
         s.classList.remove('rotating');
       });
       isAnimating = false;
-      // Re-enable rotation buttons (always available)
+      // Re-enable rotation buttons and end turn (always available on your turn)
       setRotationButtons(true);
-      // Re-enable move buttons only if it's our turn
-      setMoveButtons(myTurn);
+      document.getElementById('end-turn-btn').disabled = false;
+      // If it's our turn, re-highlight selectable vivos
+      if (myTurn) highlightSelectableVivos();
 
       // Tell opponent about our rotation
       socket.emit('player_rotated', {
