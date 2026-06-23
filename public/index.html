@@ -1815,12 +1815,41 @@ function fillSlot(who, pos, vivo, zone) {
 // ════════════════════════════════════════
 //  MOVES & ATTACK FLOW
 // ════════════════════════════════════════
-const PLACEHOLDER_MOVES = [
-  { name: 'Fossil Cannon', desc: '⚡ Power 50 · Normal', power: 50 },
-  { name: 'Stone Stomp',   desc: '⚡ Power 40 · Earth',  power: 40 },
-  { name: 'Dino Rush',     desc: '⚡ Power 65 · Normal', power: 65 },
-  { name: 'Ancient Roar',  desc: '🌀 Lowers DEF',        power: 0  },
-];
+// Get battle moves for a vivosaur from the database, sorted by game order
+function getVivoMoves(vivoName) {
+  const vivo = VIVOSAURS.find(v => v.name === vivoName);
+  if (!vivo || !vivo.moves || !vivo.moves.length) return [];
+
+  function getMoveGroup(m) {
+    const cat = (m.category || '').toLowerCase();
+    if (cat === 'team') return 4;
+    if (m.dmg !== null && m.dmg !== undefined) return 1; // damage
+    const eff = (m.effect || '').toLowerCase();
+    if (eff.includes('recover lp') || eff.includes('give lp') || eff.includes('restore lp')) return 3; // healing
+    return 2; // buff/debuff/passive
+  }
+
+  return [...vivo.moves].sort((a, b) => {
+    const ga = getMoveGroup(a), gb = getMoveGroup(b);
+    if (ga !== gb) return ga - gb;
+    return (a.fp ?? 0) - (b.fp ?? 0);
+  }).map(m => ({
+    name: m.name,
+    power: m.dmg ?? 0,
+    fp: m.fp ?? 0,
+    category: m.category === 'Link' ? 'Standard' : (m.category || 'Standard'),
+    effect: m.effect || '',
+    desc: buildMoveDesc(m),
+  }));
+}
+
+function buildMoveDesc(m) {
+  const parts = [];
+  if (m.dmg !== null && m.dmg !== undefined) parts.push(`DMG ${m.dmg}`);
+  if (m.fp  !== null && m.fp  !== undefined) parts.push(`FP ${m.fp}`);
+  if (m.effect) parts.push(m.effect);
+  return parts.join(' · ');
+}
 
 let attackPhase      = 'idle';
 let selectedAttacker = null;
@@ -2060,7 +2089,8 @@ function selectAttacker(pos) {
   showStatBlock('your', pos, true);
 
   showMovePrompt(`${vivoName} — choose a move:`);
-  renderMoveButtons(PLACEHOLDER_MOVES);
+  const vivoMoves = getVivoMoves(vivoName);
+  renderMoveButtons(vivoMoves);
   document.getElementById('turn-bar').textContent = `⚔️ ${vivoName} — pick a move!`;
 }
 
@@ -2072,9 +2102,20 @@ function renderMoveButtons(moves) {
   moves.forEach(move => {
     const btn = document.createElement('button');
     btn.className = 'move-btn';
-    btn.innerHTML = `${move.name}<div class="move-sub">${move.desc}</div>`;
+    const catClass = (move.category || 'standard').toLowerCase();
+    const dmgStr = move.power ? `DMG ${move.power}` : '';
+    const fpStr  = move.fp   ? `FP ${move.fp}`    : '';
+    const subParts = [dmgStr, fpStr].filter(Boolean).join(' · ');
+    btn.innerHTML = `
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+        <span>${move.name}</span>
+        <span class="vhc-move-cat ${catClass}" style="font-size:.58rem;padding:1px 5px">${move.category}</span>
+      </div>
+      ${subParts ? `<div class="move-sub">${subParts}</div>` : ''}
+      ${move.effect ? `<div class="move-sub" style="font-style:italic;margin-top:2px">${move.effect}</div>` : ''}`;
     btn.onclick = () => selectMove(move);
     area.appendChild(btn);
+  });
   });
   if (moves.length > 0) {
     const cancel = document.createElement('button');
@@ -2126,15 +2167,16 @@ function confirmAttack(targetPos) {
   const targetName = targetSlot ? targetSlot.dataset.vivoName : '???';
   socket.emit('send_move', {
     moveName: selectedMove.name,
+    movePower: selectedMove.power ?? 0,
     attackerName: selectedAttacker.vivo.name,
     attackerPos: selectedAttacker.pos,
     targetName, targetPos,
   });
 }
 
-socket.on('your_move_sent', ({ moveName, attackerName, attackerPos, targetName }) => {
+socket.on('your_move_sent', ({ moveName, movePower, attackerName, attackerPos, targetName }) => {
   attackPending = false;
-  const dmg = (PLACEHOLDER_MOVES.find(m => m.name === moveName) || {}).power || 0;
+  const dmg = movePower ?? 0;
   console.log('your_move_sent:', moveName, 'on', targetName, 'dmg:', dmg);
   const allOpp = [
     ...(oppBattleState?.azSlots || []),
@@ -2179,8 +2221,8 @@ socket.on('your_move_sent', ({ moveName, attackerName, attackerPos, targetName }
   checkWin();
 });
 
-socket.on('opponent_moved', ({ moveName, attackerName, targetName }) => {
-  const dmg = (PLACEHOLDER_MOVES.find(m => m.name === moveName) || {}).power || 0;
+socket.on('opponent_moved', ({ moveName, movePower, attackerName, targetName }) => {
+  const dmg = movePower ?? 0;
   console.log('opponent_moved received:', moveName, 'from', attackerName, 'on', targetName, 'dmg:', dmg);
 
   // Find the vivosaur in state — search both azSlots and szSlots
