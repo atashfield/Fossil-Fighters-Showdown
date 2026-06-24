@@ -117,19 +117,33 @@ io.on("connection", (socket) => {
     battle.p1State = p1State;
     battle.p2State = p2State;
 
+    // Determine who goes first based on combined SPD of all 3 vivosaurs
+    const totalSpd = (state) => {
+      const all = [...(state.azSlots || []), ...(state.szSlots || [])];
+      return all.reduce((sum, v) => sum + (v.spd || v.speed || 0), 0);
+    };
+    const p1Spd = totalSpd(p1State);
+    const p2Spd = totalSpd(p2State);
+    let p1GoesFirst;
+    if (p1Spd > p2Spd)       p1GoesFirst = true;
+    else if (p2Spd > p1Spd)  p1GoesFirst = false;
+    else                       p1GoesFirst = Math.random() < 0.5; // 50/50 on tie
+
+    console.log(`Speed: ${battle.p1.playerName}=${p1Spd} vs ${battle.p2.playerName}=${p2Spd} → ${p1GoesFirst ? battle.p1.playerName : battle.p2.playerName} goes first`);
+
     battle.p1.emit("battle_start", {
       yourFormation: battle.p1Formation,
       oppFormation: battle.p2Formation,
       yourState: p1State,
       oppState: p2State,
-      yourTurn: true,
+      yourTurn: p1GoesFirst,
     });
     battle.p2.emit("battle_start", {
       yourFormation: battle.p2Formation,
       oppFormation: battle.p1Formation,
       yourState: p2State,
       oppState: p1State,
-      yourTurn: false,
+      yourTurn: !p1GoesFirst,
     });
 
     console.log(`Battle started: ${battle.p1.playerName} vs ${battle.p2.playerName}`);
