@@ -2318,8 +2318,8 @@ function calculateDamage(attacker, attackerPos, defender, defenderPos, basePower
     else if (oneBoost) elemMult = 2;
     else elemMult = 1.5;
   } else if (advantage === 'dis') {
-    // Disadvantage always *1 regardless of elemental boost per formula
-    elemMult = 1;
+    if (bothBoost || oneBoost) elemMult = 0.5;
+    else elemMult = 1;
   }
   // No interaction = 1 (already set)
 
@@ -2417,7 +2417,7 @@ socket.on('your_move_sent', ({ moveName, movePower, isCrit, elemMult, attackerNa
     if (targetVivo.currentLp <= 0 && actualPos) removeVivo('opp', actualPos);
   }
   const critStr1 = isCrit ? ' <span style="color:#ffd700">★ CRIT!</span>' : '';
-  const elemStr1 = elemMult > 1 ? ` <span style="color:#ff8c60">x${elemMult} effective!</span>` : elemMult < 1 ? ' <span style="color:#888">not very effective</span>' : '';
+  const elemStr1 = elemMult > 1 ? ` <span style="color:#ff8c60">x${elemMult} effective!</span>` : elemMult === 0.5 ? ' <span style="color:#888">×0.5 not very effective</span>' : '';
   battleLog(`➤ Your <strong>${attackerName}</strong> used <strong>${moveName}</strong> on ${targetName}${dmg ? ` — ${dmg} damage!` : ''}${critStr1}${elemStr1}`, 'you');
   usedAttackers.add(attackerName);
   const attackerSlot = document.getElementById(`your-slot-${attackerPos}`);
@@ -2471,7 +2471,7 @@ socket.on('opponent_moved', ({ moveName, movePower, isCrit, elemMult, attackerNa
     if (targetVivo.currentLp <= 0 && actualPos) removeVivo('your', actualPos);
   }
   const critStr2 = isCrit ? ' <span style="color:#ffd700">★ CRIT!</span>' : '';
-  const elemStr2 = elemMult > 1 ? ` <span style="color:#ff8c60">x${elemMult} effective!</span>` : elemMult < 1 ? ' <span style="color:#888">not very effective</span>' : '';
+  const elemStr2 = elemMult > 1 ? ` <span style="color:#ff8c60">x${elemMult} effective!</span>` : elemMult === 0.5 ? ' <span style="color:#888">×0.5 not very effective</span>' : '';
   battleLog(`➤ ${attackerName} used <strong>${moveName}</strong> on your ${targetName}${dmg ? ` — ${dmg} damage!` : ''}${critStr2}${elemStr2}`, 'opp');
   checkWin();
 });
