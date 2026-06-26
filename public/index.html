@@ -119,9 +119,9 @@
     .vivo-grid { flex: 1; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(115px,1fr)); gap: 8px; align-content: start; padding-right: 4px; }
     .vivo-grid::-webkit-scrollbar { width: 4px; }
     .vivo-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
-    .vivo-card { background: var(--sidebar); border: 1px solid var(--border); border-radius: 8px; padding: 10px 8px; cursor: pointer; transition: all .15s; text-align: center; user-select: none; }
-    .vivo-card:hover { border-color: var(--accent); background: var(--panel); }
-    .vivo-card.selected { border-color: var(--accent); background: rgba(196,163,90,.15); }
+    .vivo-card { border: 2px solid transparent; border-radius: 8px; padding: 10px 8px; cursor: pointer; transition: all .15s; text-align: center; user-select: none; }
+    .vivo-card:hover { filter: brightness(1.2); border-color: rgba(255,255,255,.5); }
+    .vivo-card.selected { border-color: #fff !important; filter: brightness(1.25); box-shadow: 0 0 0 2px rgba(255,255,255,.3); }
     .vivo-card.disabled { opacity: .35; cursor: default; pointer-events: none; }
     /* Vivosaur sprites */
     .vc-sprite { display: flex; justify-content: center; margin-bottom: 4px; height: 52px; align-items: center; }
@@ -130,8 +130,8 @@
     .battle-sprite-img { max-width: 64px; max-height: 52px; object-fit: contain; image-rendering: pixelated; display: block; margin: 0 auto 2px; }
     .battle-sprite-img.flip-h { transform: scaleX(-1); }
 
-    .vivo-card .vc-name { font-size: .75rem; font-weight: 600; color: var(--text); margin-bottom: 4px; line-height: 1.2; }
-    .vivo-card .vc-lp { font-size: .68rem; color: var(--muted); margin-top: 3px; }
+    .vivo-card .vc-name { font-size: .72rem; font-weight: 700; color: #fff; margin-bottom: 2px; line-height: 1.2; text-shadow: 0 1px 3px rgba(0,0,0,.7); }
+    .vivo-card .vc-num { font-size: .63rem; color: rgba(255,255,255,.85); text-shadow: 0 1px 2px rgba(0,0,0,.6); }
     .type-badge { font-size: .65rem; padding: 2px 6px; border-radius: 10px; display: inline-block; font-weight: 600; }
     .type-fire    { background: rgba(250,1,0,.2);    color: #FF6666; border: 1px solid rgba(250,1,0,.4); }
     .type-air     { background: rgba(55,214,9,.2);   color: #7ef57a; border: 1px solid rgba(55,214,9,.4); }
@@ -1202,11 +1202,17 @@ function renderVivoGrid() {
     card.className = 'vivo-card' + (inTeam ? ' selected' : '') + (full ? ' disabled' : '');
     const spriteUrl = getSpriteUrl(v.name);
     const spriteFlip = getSpriteFlipClass(v.name, 'right');
+    // Set card background to element color
+    const typeColorMap = {
+      Fire:'#FF0403', Air:'#37D609', Earth:'#FFC700',
+      Water:'#3570F4', Neutral:'#6a7a8a', Legendary:'#3D3B3C'
+    };
+    const bgColor = typeColorMap[v.type] || '#2a3a5c';
+    card.style.background = bgColor;
     card.innerHTML = `
       ${spriteUrl ? `<div class="vc-sprite"><img src="${spriteUrl}" alt="${v.name}" class="vivo-sprite-img ${spriteFlip}"/></div>` : ''}
       <div class="vc-name">${v.name}</div>
-      <span class="type-badge type-${v.type.toLowerCase()}">${v.type}</span>
-      <div class="vc-lp">${v.lp} LP</div>`;
+      <div class="vc-num">No.${v.number}</div>`;
     if (!full) card.onclick = () => toggleVivo(v);
     card.addEventListener('mouseenter', (e) => showVivoHoverCard(v, e));
     card.addEventListener('mousemove',  (e) => positionHoverCard(e));
