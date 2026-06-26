@@ -126,7 +126,9 @@
     /* Vivosaur sprites */
     .vc-sprite { display: flex; justify-content: center; margin-bottom: 4px; height: 52px; align-items: center; }
     .vivo-sprite-img { max-width: 64px; max-height: 52px; object-fit: contain; image-rendering: pixelated; }
+    .vivo-sprite-img.flip-h { transform: scaleX(-1); }
     .battle-sprite-img { max-width: 64px; max-height: 52px; object-fit: contain; image-rendering: pixelated; display: block; margin: 0 auto 2px; }
+    .battle-sprite-img.flip-h { transform: scaleX(-1); }
 
     .vivo-card .vc-name { font-size: .75rem; font-weight: 600; color: var(--text); margin-bottom: 4px; line-height: 1.2; }
     .vivo-card .vc-lp { font-size: .68rem; color: var(--muted); margin-top: 3px; }
@@ -1017,6 +1019,27 @@ function getSpriteUrl(name) {
   return `/sprites/${encodeURIComponent(file)}`;
 }
 
+// Returns true if this vivosaur uses a numbered sprite (naturally faces LEFT)
+// Returns false if it uses a named/evolved sprite (naturally faces RIGHT)
+function isNumberedSprite(name) {
+  const file = SPRITE_MAP[name];
+  if (!file) return false;
+  return /^\d+\.png$/.test(file);
+}
+
+// Get flip class for a sprite based on desired facing direction
+// direction: 'right' = face right, 'left' = face left
+function getSpriteFlipClass(name, direction) {
+  const numbered = isNumberedSprite(name);
+  // numbered sprites naturally face LEFT
+  // named/evolved sprites naturally face RIGHT
+  if (direction === 'right') {
+    return numbered ? 'flip-h' : ''; // flip numbered to face right
+  } else {
+    return numbered ? '' : 'flip-h'; // flip evolved to face left
+  }
+}
+
 const TYPE_COLORS = {
   Fire:'#FF0403', Air:'#37D609', Earth:'#FFC700',
   Water:'#3570F4', Neutral:'#F1F5F5', Legendary:'#3D3B3C'
@@ -1178,8 +1201,9 @@ function renderVivoGrid() {
     const card = document.createElement('div');
     card.className = 'vivo-card' + (inTeam ? ' selected' : '') + (full ? ' disabled' : '');
     const spriteUrl = getSpriteUrl(v.name);
+    const spriteFlip = getSpriteFlipClass(v.name, 'right');
     card.innerHTML = `
-      ${spriteUrl ? `<div class="vc-sprite"><img src="${spriteUrl}" alt="${v.name}" class="vivo-sprite-img"/></div>` : ''}
+      ${spriteUrl ? `<div class="vc-sprite"><img src="${spriteUrl}" alt="${v.name}" class="vivo-sprite-img ${spriteFlip}"/></div>` : ''}
       <div class="vc-name">${v.name}</div>
       <span class="type-badge type-${v.type.toLowerCase()}">${v.type}</span>
       <div class="vc-lp">${v.lp} LP</div>`;
@@ -1844,9 +1868,12 @@ function fillSlot(who, pos, vivo, zone) {
   const critPct  = Math.round((vivo.crit ?? 0) * 100);
 
   const spriteUrl = getSpriteUrl(vivo.name);
+  // Your vivosaurs face right, opponent's face left
+  const spriteDirection = (who === 'your') ? 'right' : 'left';
+  const spriteFlipCls = getSpriteFlipClass(vivo.name, spriteDirection);
   slot.innerHTML = `
     ${spriteUrl
-      ? `<img src="${spriteUrl}" alt="${vivo.name}" class="battle-sprite-img" title="${vivo.name}"/>`
+      ? `<img src="${spriteUrl}" alt="${vivo.name}" class="battle-sprite-img ${spriteFlipCls}" title="${vivo.name}"/>`
       : `<div class="fs-name">${vivo.name}</div>`}
     <div class="fs-hp-bar-bg"><div class="fs-hp-bar" id="${who}-hp-bar-${pos}" style="width:${pct}%;background:${hpColor}"></div></div>
     <div class="fs-lp" id="${who}-lp-${pos}">${lp} / ${maxLp} LP</div>
