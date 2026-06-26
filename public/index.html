@@ -807,7 +807,7 @@
               </select>
             </div>
             <div class="filter-active-tags" id="filter-tags"></div>
-            <div class="filter-count" id="filter-count"></div>
+
           </div>
           <div class="vivo-grid" id="vivo-grid"></div>
         </div>
@@ -1192,8 +1192,7 @@ function renderVivoGrid() {
   });
 
   // Update count
-  const countEl = document.getElementById('filter-count');
-  if (countEl) countEl.textContent = `${filtered.length} vivosaur${filtered.length !== 1 ? 's' : ''}`;
+
 
   filtered.forEach(v => {
     const inTeam = currentTeam.some(t => t.name === v.name);
@@ -1319,7 +1318,7 @@ function showVivoHoverCard(v, e) {
         <div class="vhc-move">
           <div class="vhc-move-header">
             <span class="vhc-move-name">${m.name}</span>
-            <span class="vhc-move-cat ${catClass}">${displayCat}</span>
+            ${displayCat !== 'Standard' && displayCat !== 'Rotate' ? `<span class="vhc-move-cat ${catClass}">${displayCat}</span>` : ''}
           </div>
           ${(fpHtml || dmgHtml) ? `<div class="vhc-move-stats">${fpHtml}${dmgHtml ? (fpHtml ? '&nbsp;&nbsp;' : '') + dmgHtml : ''}</div>` : ''}
           ${effectHtml}
