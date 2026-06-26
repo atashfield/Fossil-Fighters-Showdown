@@ -1206,7 +1206,7 @@ function renderVivoGrid() {
     // Subtle tinted background — dark navy base with faint element color wash
     const typeRgbMap = {
       Fire:'250,4,3', Air:'55,214,9', Earth:'255,199,0',
-      Water:'53,112,244', Neutral:'144,160,176', Legendary:'80,75,80'
+      Water:'53,112,244', Neutral:'220,225,235', Legendary:'80,75,80'
     };
     const rgb = typeRgbMap[v.type] || '42,58,92';
     card.style.background = `linear-gradient(135deg, rgba(${rgb},0.18) 0%, rgba(${rgb},0.08) 100%), var(--sidebar)`;
