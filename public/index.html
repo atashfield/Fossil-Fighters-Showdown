@@ -769,6 +769,29 @@
                 <option value="asc">↑ Asc</option>
                 <option value="desc">↓ Desc</option>
               </select>
+              <select class="filter-select" id="filter-passive" onchange="applyFilters()">
+                <option value="">Passive</option>
+                <option value="Auto Counter">Auto Counter</option>
+                <option value="Auto LP Recovery 1">Auto LP Recovery 1</option>
+                <option value="Auto LP Recovery 2">Auto LP Recovery 2</option>
+                <option value="Berserker">Berserker</option>
+                <option value="Elemental Boost">Elemental Boost</option>
+                <option value="Enter With Harden">Enter With Harden</option>
+                <option value="Enter With Packback">Enter With Packback</option>
+                <option value="Enter With Quicken">Enter With Quicken</option>
+                <option value="Enter With Super Enflame">Enter With Super Enflame</option>
+                <option value="Enter With Super Sleep">Enter With Super Sleep</option>
+                <option value="FP Absorb">FP Absorb</option>
+                <option value="FP Plus 1">FP Plus 1</option>
+                <option value="FP Plus 2">FP Plus 2</option>
+                <option value="FP Plus 3">FP Plus 3</option>
+                <option value="Parting Blow 1">Parting Blow 1</option>
+                <option value="Parting Blow 2">Parting Blow 2</option>
+                <option value="Parting Blow 3">Parting Blow 3</option>
+                <option value="Position Lock">Position Lock</option>
+                <option value="Resurrect">Resurrect</option>
+                <option value="Solo Power">Solo Power</option>
+              </select>
               <select class="filter-select" id="filter-link" onchange="applyFilters()">
                 <option value="">Link</option>
                 <option value="yes">Has Link</option>
@@ -1064,7 +1087,8 @@ function renderVivoGrid() {
   const supTarget = document.getElementById('filter-support-target')?.value || '';
   const supStat   = document.getElementById('filter-support-stat')?.value || '';
   const supDir    = document.getElementById('filter-support-dir')?.value || '';
-  const linkFilter = document.getElementById('filter-link')?.value || '';
+  const linkFilter    = document.getElementById('filter-link')?.value || '';
+  const passiveFilter = document.getElementById('filter-passive')?.value || '';
   const sortBy    = document.getElementById('sort-by')?.value || 'name';
   const sortDir   = document.getElementById('sort-dir')?.value || 'asc';
   const grid      = document.getElementById('vivo-grid');
@@ -1092,6 +1116,8 @@ function renderVivoGrid() {
         }
       }
     }
+    // Passive filter
+    if (passiveFilter && v.ability !== passiveFilter) return false;
     // Link filter
     if (linkFilter === 'yes' && (v.link === null || v.link === undefined)) return false;
     if (linkFilter === 'no'  && (v.link !== null && v.link !== undefined)) return false;
@@ -1312,6 +1338,7 @@ function clearAllFilters() {
   document.getElementById('filter-support-dir').value = '';
   document.getElementById('filter-support-stat').style.display = 'none';
   document.getElementById('filter-support-dir').style.display = 'none';
+  document.getElementById('filter-passive').value = '';
   document.getElementById('filter-link').value = '';
   document.getElementById('sort-by').value = 'name';
   document.getElementById('sort-dir').value = 'asc';
@@ -1327,7 +1354,8 @@ function updateFilterTags() {
   const supTarget = document.getElementById('filter-support-target')?.value;
   const supStat   = document.getElementById('filter-support-stat')?.value;
   const supDir    = document.getElementById('filter-support-dir')?.value;
-  const linkFilter = document.getElementById('filter-link')?.value;
+  const linkFilter    = document.getElementById('filter-link')?.value;
+  const passiveFilter = document.getElementById('filter-passive')?.value;
   const search  = document.getElementById('vivo-search')?.value?.trim();
 
   if (type)   active.push({ label: `Type: ${type}`,  clear: () => { document.getElementById('filter-type').value = ''; applyFilters(); } });
@@ -1345,6 +1373,7 @@ function updateFilterTags() {
       applyFilters();
     }});
   }
+  if (passiveFilter) active.push({ label: `Passive: ${passiveFilter}`, clear: () => { document.getElementById('filter-passive').value = ''; applyFilters(); } });
   if (linkFilter) active.push({ label: linkFilter === 'yes' ? 'Has Link' : 'No Link', clear: () => { document.getElementById('filter-link').value = ''; applyFilters(); } });
   if (search) active.push({ label: `"${search}"`, clear: () => { document.getElementById('vivo-search').value = ''; applyFilters(); } });
 
