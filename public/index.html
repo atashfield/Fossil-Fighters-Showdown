@@ -2241,6 +2241,131 @@ function selectMove(move) {
   });
 }
 
+
+// ════════════════════════════════════════
+//  DAMAGE FORMULA
+// ════════════════════════════════════════
+
+// Type advantage chart: attacker type -> defender type -> advantage ('adv','dis','none')
+const TYPE_CHART = {
+  Fire:  { Fire:'none', Air:'adv',  Earth:'dis', Water:'dis', Neutral:'none', Legendary:'none' },
+  Air:   { Fire:'dis',  Air:'none', Earth:'adv',  Water:'none', Neutral:'none', Legendary:'none' },
+  Earth: { Fire:'adv',  Air:'dis',  Earth:'none', Water:'none', Neutral:'none', Legendary:'none' },
+  Water: { Fire:'adv',  Air:'none', Earth:'none', Water:'dis',  Neutral:'none', Legendary:'none' },
+  Neutral:   { Fire:'none', Air:'none', Earth:'none', Water:'none', Neutral:'none', Legendary:'none' },
+  Legendary: { Fire:'none', Air:'none', Earth:'none', Water:'none', Neutral:'none', Legendary:'none' },
+};
+
+// Steps from AZ-Mid for each slot position
+// Positions: 1=SZ-Top, 2=AZ-Top, 3=SZ-Mid, 4=AZ-Mid, 5=SZ-Bot, 6=AZ-Bot
+const POS_STEPS_FROM_AZ_MID = { 1:2, 2:1, 3:3, 4:0, 5:2, 6:1 };
+
+// Range multiplier tables
+const RANGE_MULT = {
+  'Close-Range': { 1:1.875, 2:1.25, 3:1, 4:0.625, 5:0.5, 6:0.375, 7:0.25 },
+  'Mid-Range':   { 1:1,     2:1.25, 3:1.5, 4:1.25, 5:1,   6:0.75,  7:0.5  },
+  'Long-Range':  { 1:0.25,  2:0.5,  3:0.75, 4:1,   5:1.5, 6:1.75,  7:2    },
+};
+
+function calculateDamage(attacker, attackerPos, defender, defenderPos, basePower) {
+  // ── Base stats
+  const atkStat  = attacker.effectiveAtk ?? attacker.atk;
+  const defStat  = defender.effectiveDef ?? defender.def;
+
+  // ── Status effects on attacker (ATK side)
+  const atkStatus = attacker.statusEffects || {};
+  let atkStatusBonus = 0;
+  if (atkStatus.enflame)      atkStatusBonus += 20;
+  if (atkStatus.superEnflame) atkStatusBonus += 40;
+  if (atkStatus.enrage)       atkStatusBonus += 10;
+  if (atkStatus.superEnrage)  atkStatusBonus += 20;
+
+  // ── Support effects (already applied as effectiveAtk/effectiveDef from server)
+  // Attack support = ratio of effectiveAtk to base atk (or 1 if no support)
+  const atkSupport = attacker.atk > 0 ? atkStat / attacker.atk : 1;
+  // Defense support = ratio of effectiveDef to base def
+  const defSupport = defender.def > 0 ? defStat / defender.def : 1;
+
+  // ── Status effects on defender (DEF side)
+  const defStatus = defender.statusEffects || {};
+  let defStatusMod = 0;
+  if (defStatus.enflame)      defStatusMod -= 5;
+  if (defStatus.superEnflame) defStatusMod -= 10;
+  if (defStatus.harden)       defStatusMod += 30;
+  if (defStatus.superHarden)  defStatusMod += 50;
+
+  // ── Core damage calculation
+  const attackValue = (atkStat + basePower + atkStatusBonus) * atkSupport;
+  const defenseValue = (defStat * defSupport) + defStatusMod;
+  let damage = attackValue - defenseValue;
+  if (damage < 1) damage = 1; // minimum 1 damage
+
+  // ── Random multiplier (0.75 to 0.85, uniform)
+  const randomMult = 0.75 + Math.random() * 0.10;
+
+  // ── Element multiplier
+  const atkType = attacker.type;
+  const defType = defender.type;
+  const advantage = (TYPE_CHART[atkType] || {})[defType] || 'none';
+  const atkHasBoost = attacker.ability === 'Elemental Boost';
+  const defHasBoost = defender.ability === 'Elemental Boost';
+  const bothBoost   = atkHasBoost && defHasBoost;
+  const oneBoost    = atkHasBoost !== defHasBoost; // XOR
+
+  let elemMult = 1;
+  if (advantage === 'adv') {
+    if (bothBoost) elemMult = 3;
+    else if (oneBoost) elemMult = 2;
+    else elemMult = 1.5;
+  } else if (advantage === 'dis') {
+    // Disadvantage always *1 regardless of elemental boost per formula
+    elemMult = 1;
+  }
+  // No interaction = 1 (already set)
+
+  // ── Range multiplier
+  // Tile distance = attacker steps from AZ-Mid + defender steps from AZ-Mid + 1
+  const atkSteps = POS_STEPS_FROM_AZ_MID[attackerPos] ?? 0;
+  const defSteps = POS_STEPS_FROM_AZ_MID[defenderPos] ?? 0;
+  const tiles = Math.min(7, atkSteps + defSteps + 1);
+  const attackerClass = attacker.class || 'Mid-Range';
+  const rangeMult = (RANGE_MULT[attackerClass] || RANGE_MULT['Mid-Range'])[tiles] || 1;
+
+  // ── Critical hit
+  const critChance = attacker.crit ?? 0; // stored as decimal e.g. 0.15
+  const isCrit = Math.random() < critChance;
+  const critMult = isCrit ? 1.5 : 1;
+
+  // ── Parting Blow (attacker has <= 10% LP)
+  const maxLp = attacker.lp;
+  const curLp = attacker.currentLp ?? maxLp;
+  const partingThreshold = Math.floor(maxLp * 0.10);
+  const isParting = curLp <= partingThreshold;
+  let partingMult = 1;
+  if (isParting) {
+    const pb = attacker.ability || '';
+    if (pb === 'Parting Blow 1') partingMult = 1.5;
+    else if (pb === 'Parting Blow 2') partingMult = 2;
+    else if (pb === 'Parting Blow 3') partingMult = 3;
+  }
+
+  // ── Charge! multiplier
+  const chargeMult = (atkStatus.charge) ? 2.5 : 1;
+
+  // ── Final damage (floor, never round up)
+  const finalDmg = Math.floor(
+    damage * randomMult * elemMult * rangeMult * critMult * partingMult * chargeMult
+  );
+
+  return {
+    damage: Math.max(1, finalDmg),
+    isCrit,
+    elemMult,
+    rangeMult,
+    tiles,
+  };
+}
+
 function confirmAttack(targetPos) {
   if (!selectedAttacker || !selectedMove) return;
   if (attackPending) return;
@@ -2251,19 +2376,32 @@ function confirmAttack(targetPos) {
   showMovePrompt('Waiting…');
   const targetSlot = document.getElementById(`opp-slot-${targetPos}`);
   const targetName = targetSlot ? targetSlot.dataset.vivoName : '???';
+
+  // Calculate damage using full formula
+  const attackerVivo = selectedAttacker.vivo;
+  const defenderVivo = findOppVivoByName(targetName);
+  const attackerPos  = selectedAttacker.pos;
+
+  let calcResult = { damage: selectedMove.power ?? 0, isCrit: false, elemMult: 1, tiles: 1 };
+  if (attackerVivo && defenderVivo && selectedMove.power > 0) {
+    calcResult = calculateDamage(attackerVivo, attackerPos, defenderVivo, targetPos, selectedMove.power);
+  }
+
   socket.emit('send_move', {
     moveName: selectedMove.name,
-    movePower: selectedMove.power ?? 0,
+    movePower: calcResult.damage,
+    isCrit: calcResult.isCrit,
+    elemMult: calcResult.elemMult,
+    tiles: calcResult.tiles,
     attackerName: selectedAttacker.vivo.name,
     attackerPos: selectedAttacker.pos,
     targetName, targetPos,
   });
 }
 
-socket.on('your_move_sent', ({ moveName, movePower, attackerName, attackerPos, targetName }) => {
+socket.on('your_move_sent', ({ moveName, movePower, isCrit, elemMult, attackerName, attackerPos, targetName }) => {
   attackPending = false;
   const dmg = movePower ?? 0;
-  console.log('your_move_sent:', moveName, 'on', targetName, 'dmg:', dmg);
   const allOpp = [
     ...(oppBattleState?.azSlots || []),
     ...(oppBattleState?.szSlots || [])
@@ -2278,7 +2416,9 @@ socket.on('your_move_sent', ({ moveName, movePower, attackerName, attackerPos, t
     if (actualPos) updateSlotLp('opp', actualPos, targetVivo);
     if (targetVivo.currentLp <= 0 && actualPos) removeVivo('opp', actualPos);
   }
-  battleLog(`➤ Your <strong>${attackerName}</strong> used <strong>${moveName}</strong> on ${targetName}${dmg ? ` — ${dmg} damage!` : ''}`, 'you');
+  const critStr1 = isCrit ? ' <span style="color:#ffd700">★ CRIT!</span>' : '';
+  const elemStr1 = elemMult > 1 ? ` <span style="color:#ff8c60">x${elemMult} effective!</span>` : elemMult < 1 ? ' <span style="color:#888">not very effective</span>' : '';
+  battleLog(`➤ Your <strong>${attackerName}</strong> used <strong>${moveName}</strong> on ${targetName}${dmg ? ` — ${dmg} damage!` : ''}${critStr1}${elemStr1}`, 'you');
   usedAttackers.add(attackerName);
   const attackerSlot = document.getElementById(`your-slot-${attackerPos}`);
   if (attackerSlot) {
@@ -2307,9 +2447,8 @@ socket.on('your_move_sent', ({ moveName, movePower, attackerName, attackerPos, t
   checkWin();
 });
 
-socket.on('opponent_moved', ({ moveName, movePower, attackerName, targetName }) => {
+socket.on('opponent_moved', ({ moveName, movePower, isCrit, elemMult, attackerName, attackerPos, targetName, targetPos }) => {
   const dmg = movePower ?? 0;
-  console.log('opponent_moved received:', moveName, 'from', attackerName, 'on', targetName, 'dmg:', dmg);
 
   // Find the vivosaur in state — search both azSlots and szSlots
   let targetVivo = null;
@@ -2331,7 +2470,9 @@ socket.on('opponent_moved', ({ moveName, movePower, attackerName, targetName }) 
     }
     if (targetVivo.currentLp <= 0 && actualPos) removeVivo('your', actualPos);
   }
-  battleLog(`➤ ${attackerName} used <strong>${moveName}</strong> on your ${targetName}${dmg ? ` — ${dmg} damage!` : ''}`, 'opp');
+  const critStr2 = isCrit ? ' <span style="color:#ffd700">★ CRIT!</span>' : '';
+  const elemStr2 = elemMult > 1 ? ` <span style="color:#ff8c60">x${elemMult} effective!</span>` : elemMult < 1 ? ' <span style="color:#888">not very effective</span>' : '';
+  battleLog(`➤ ${attackerName} used <strong>${moveName}</strong> on your ${targetName}${dmg ? ` — ${dmg} damage!` : ''}${critStr2}${elemStr2}`, 'opp');
   checkWin();
 });
 
