@@ -201,15 +201,15 @@ io.on("connection", (socket) => {
   });
 
   // ── Move handling ──
-  socket.on("send_move", ({ moveName, movePower, attackerName, attackerPos, targetName, targetPos }) => {
+  socket.on("send_move", ({ moveName, movePower, isCrit, elemMult, tiles, attackerName, attackerPos, targetName, targetPos }) => {
     const battleId = socket.battleId;
     if (!battleId || !battles[battleId]) return;
     const battle = battles[battleId];
     const oppRole = socket.role === "p1" ? "p2" : "p1";
     const opponent = battle[oppRole];
-    socket.emit("your_move_sent", { moveName, movePower, attackerName, attackerPos, targetName, targetPos });
-    opponent.emit("opponent_moved", { moveName, movePower, attackerName, attackerPos, targetName, targetPos });
-    console.log(`${socket.playerName}: ${attackerName} used ${moveName} (DMG:${movePower}) on ${targetName}`);
+    socket.emit("your_move_sent", { moveName, movePower, isCrit, elemMult, tiles, attackerName, attackerPos, targetName, targetPos });
+    opponent.emit("opponent_moved", { moveName, movePower, isCrit, elemMult, tiles, attackerName, attackerPos, targetName, targetPos });
+    console.log(`${socket.playerName}: ${attackerName} used ${moveName} (DMG:${movePower}${isCrit?' CRIT':''}) on ${targetName}`);
   });
 
   // ── Forfeit ──
