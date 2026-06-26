@@ -311,49 +311,56 @@
     }
 
     /* Field */
+    /* ── IMAGE-BASED BATTLE FIELD ── */
     .battle-field {
-      display: flex; gap: 20px; align-items: stretch; flex: 1;
-    }
-
-    .field-side {
-      flex: 1; display: flex; flex-direction: column; gap: 8px;
+      position: relative; flex: 1;
+      background: url('/field.png') center/cover no-repeat;
+      border-radius: 10px; overflow: visible;
+      min-height: 260px;
     }
     .field-side-label {
-      font-size: .65rem; text-transform: uppercase; letter-spacing: .12em;
-      color: var(--muted); text-align: center; margin-bottom: 2px;
+      position: absolute; top: 6px;
+      font-size: .62rem; text-transform: uppercase; letter-spacing: .1em;
+      color: rgba(255,255,255,.8); text-shadow: 0 1px 3px rgba(0,0,0,.9);
+      background: rgba(0,0,0,.4); padding: 2px 8px; border-radius: 8px; z-index: 5;
     }
-
-    /* The 6-slot grid per side: 2 cols x 3 rows */
-    .field-grid {
-      flex: 1; display: grid;
-      grid-template-columns: 1fr 1fr;
-      grid-template-rows: 1fr 1fr 1fr;
-      gap: 8px;
-    }
+    #your-side-label { left: 6px; }
+    #opp-side-label  { right: 6px; }
 
     .field-slot {
-      border-radius: 10px; border: 2px solid var(--border);
-      background: var(--sidebar); padding: 10px;
-      display: flex; flex-direction: column; justify-content: center;
-      align-items: center; text-align: center; gap: 4px;
-      transition: border-color .2s;
-      min-height: 80px;
+      position: absolute; width: 70px; height: 70px;
+      transform: translate(-50%, -50%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: flex-end;
+      cursor: default; z-index: 4;
+      transition: filter .15s, opacity .2s;
     }
-    .field-slot.occupied-az { border-color: var(--az-color); background: rgba(224,92,42,.1); }
-    .field-slot.occupied-sz { border-color: var(--sz-color); background: rgba(30,136,229,.1); }
-    .field-slot.empty { opacity: .3; }
-
-    .fs-zone-tag {
-      font-size: .55rem; text-transform: uppercase; letter-spacing: .08em;
-      padding: 1px 6px; border-radius: 8px; font-weight: 700;
-    }
-    .fs-zone-tag.az { background: var(--az-color); color: #fff; }
-    .fs-zone-tag.sz { background: var(--sz-color); color: #fff; }
-
-    .fs-name { font-size: .82rem; font-weight: 600; color: var(--text); line-height: 1.2; }
-    .fs-hp-bar-bg { width: 64px; background: #2a2a3e; border-radius: 3px; height: 6px; overflow: hidden; }
+    .field-slot.empty { pointer-events: none; }
+    .field-slot.occupied-az, .field-slot.occupied-sz { cursor: pointer; }
+    .fs-name { font-size: .6rem; font-weight: 700; color: #fff;
+      text-shadow: 0 1px 4px rgba(0,0,0,1); line-height: 1; text-align: center;
+      background: rgba(0,0,0,.45); padding: 1px 4px; border-radius: 3px; }
+    .fs-hp-bar-bg { width: 52px; background: rgba(0,0,0,.5); border-radius: 3px;
+      height: 5px; overflow: hidden; margin-top: 2px; }
     .fs-hp-bar { height: 100%; border-radius: 3px; transition: width .4s, background .4s; }
-    .fs-lp { font-size: .65rem; color: var(--muted); }
+    .fs-lp { font-size: .52rem; color: rgba(255,255,255,.85);
+      text-shadow: 0 1px 3px rgba(0,0,0,1); background: rgba(0,0,0,.4);
+      padding: 0 3px; border-radius: 2px; }
+
+    .field-slot.selectable { filter: drop-shadow(0 0 7px rgba(196,163,90,1)); cursor: pointer; }
+    .field-slot.selected-attacker { filter: drop-shadow(0 0 10px rgba(196,163,90,1)) brightness(1.2); }
+    .field-slot.targetable { filter: drop-shadow(0 0 7px rgba(233,69,96,1)); cursor: crosshair; }
+    .field-slot.used-attacker { opacity: .5; }
+    .field-slot.used-attacker .fs-name::after { content: ' ✓'; color: #4caf50; }
+    .field-slot.rotating { opacity: 0; transform: translate(-50%,-50%) scale(.85);
+      transition: opacity .25s, transform .25s; }
+
+    /* Remove old grid/side/divider styles */
+    .field-side { display: none; }
+    .field-divider { display: none; }
+    .field-grid { display: none; }
+    .fs-zone-tag { display: none; }
+
 
     /* Inline stat block shown inside slot */
     .fs-stat-block {
@@ -522,24 +529,7 @@
     .move-btn:disabled { opacity: .4; cursor: default; }
     .move-sub { font-size: .68rem; color: var(--muted); margin-top: 2px; }
 
-    /* Field slot interaction states */
-    .field-slot.selectable {
-      cursor: pointer; border-color: var(--accent) !important;
-      box-shadow: 0 0 0 2px rgba(196,163,90,.25);
-    }
-    .field-slot.selectable:hover { background: rgba(196,163,90,.18) !important; }
-    .field-slot.selected-attacker {
-      border-color: var(--accent) !important;
-      background: rgba(196,163,90,.25) !important;
-      box-shadow: 0 0 0 3px rgba(196,163,90,.45);
-    }
-    .field-slot.targetable {
-      cursor: crosshair; border-color: var(--accent2) !important;
-      box-shadow: 0 0 0 2px rgba(233,69,96,.3);
-    }
-    .field-slot.targetable:hover { background: rgba(233,69,96,.18) !important; }
-    .field-slot.used-attacker { opacity: .55; }
-    .field-slot.used-attacker .fs-name::after { content: ' ✓'; color: var(--hp-green); font-size: .7rem; }
+/* selection states now in field-slot block */
 
     /* Battle log */
     .battle-log {
@@ -908,36 +898,30 @@
 
   <div class="battle-body">
     <!-- Field -->
-    <div class="battle-field">
+    <!-- IMAGE-BASED BATTLE FIELD -->
+    <div class="battle-field" id="battle-field-img">
+      <div class="field-side-label" id="your-side-label">You</div>
+      <div class="field-side-label" id="opp-side-label">Opponent</div>
 
-      <!-- YOUR SIDE (left) -->
-      <div class="field-side">
-        <div class="field-side-label" id="your-side-label">You</div>
-        <div class="field-grid" id="your-field-grid">
-          <!-- 6 slots: pos 1-6, cols = SZ(left) | AZ(right) -->
-          <div class="field-slot empty" id="your-slot-1" data-pos="1"></div>
-          <div class="field-slot empty" id="your-slot-2" data-pos="2"></div>
-          <div class="field-slot empty" id="your-slot-3" data-pos="3"></div>
-          <div class="field-slot empty" id="your-slot-4" data-pos="4"></div>
-          <div class="field-slot empty" id="your-slot-5" data-pos="5"></div>
-          <div class="field-slot empty" id="your-slot-6" data-pos="6"></div>
-        </div>
-      </div>
+      <!-- YOUR SIDE slots (absolutely positioned on field image) -->
+      <!-- Pos mapping: 1=SZ-Top, 2=AZ-Top, 3=SZ-Mid, 4=AZ-Mid, 5=SZ-Bot, 6=AZ-Bot -->
+      <!-- Your SZ column: ~26% from left. Your AZ column: ~41% from left -->
+      <!-- Y positions: top=28%, mid=52%, bot=76% -->
+      <div class="field-slot empty" id="your-slot-1" data-pos="1" style="left:26%;top:28%"></div>
+      <div class="field-slot empty" id="your-slot-2" data-pos="2" style="left:41%;top:28%"></div>
+      <div class="field-slot empty" id="your-slot-3" data-pos="3" style="left:26%;top:52%"></div>
+      <div class="field-slot empty" id="your-slot-4" data-pos="4" style="left:41%;top:52%"></div>
+      <div class="field-slot empty" id="your-slot-5" data-pos="5" style="left:26%;top:76%"></div>
+      <div class="field-slot empty" id="your-slot-6" data-pos="6" style="left:41%;top:76%"></div>
 
-      <div class="field-divider"></div>
-
-      <!-- OPPONENT SIDE (right, mirrored) -->
-      <div class="field-side">
-        <div class="field-side-label" id="opp-side-label">Opponent</div>
-        <div class="field-grid" id="opp-field-grid">
-          <div class="field-slot empty" id="opp-slot-1" data-pos="1"></div>
-          <div class="field-slot empty" id="opp-slot-2" data-pos="2"></div>
-          <div class="field-slot empty" id="opp-slot-3" data-pos="3"></div>
-          <div class="field-slot empty" id="opp-slot-4" data-pos="4"></div>
-          <div class="field-slot empty" id="opp-slot-5" data-pos="5"></div>
-          <div class="field-slot empty" id="opp-slot-6" data-pos="6"></div>
-        </div>
-      </div>
+      <!-- OPPONENT SIDE slots -->
+      <!-- Opp AZ column: ~59% from left. Opp SZ column: ~74% from left -->
+      <div class="field-slot empty" id="opp-slot-1" data-pos="1" style="left:59%;top:28%"></div>
+      <div class="field-slot empty" id="opp-slot-2" data-pos="2" style="left:74%;top:28%"></div>
+      <div class="field-slot empty" id="opp-slot-3" data-pos="3" style="left:59%;top:52%"></div>
+      <div class="field-slot empty" id="opp-slot-4" data-pos="4" style="left:74%;top:52%"></div>
+      <div class="field-slot empty" id="opp-slot-5" data-pos="5" style="left:59%;top:76%"></div>
+      <div class="field-slot empty" id="opp-slot-6" data-pos="6" style="left:74%;top:76%"></div>
     </div>
 
     <!-- Turn status -->
@@ -1800,11 +1784,15 @@ socket.on('battle_start', ({ yourFormation, oppFormation, yourState, oppState, y
 // Formation B (az): AZ=pos2+pos4, SZ=pos5
 
 function renderField(who, state) {
-  // Clear all slots
+  // Clear all slots but preserve position styles (left/top % for image-based field)
   for (let i = 1; i <= 6; i++) {
     const slot = document.getElementById(`${who}-slot-${i}`);
+    const savedLeft = slot.style.left;
+    const savedTop  = slot.style.top;
     slot.className = 'field-slot empty';
     slot.innerHTML = '';
+    slot.style.left = savedLeft;
+    slot.style.top  = savedTop;
   }
 
   // Grid is 2 cols x 3 rows:
@@ -1884,12 +1872,19 @@ function fillSlot(who, pos, vivo, zone) {
   // Your vivosaurs face right, opponent's face left
   const spriteDirection = (who === 'your') ? 'right' : 'left';
   const spriteFlipCls = getSpriteFlipClass(vivo.name, spriteDirection);
+
+  // Keep the position style that was set in HTML
+  // Don't overwrite it by setting className naively
+  const existingStyle = slot.style.cssText;
+  slot.className = `field-slot occupied-${zone}`;
+  slot.style.cssText = existingStyle; // restore position
+
   slot.innerHTML = `
     ${spriteUrl
-      ? `<img src="${spriteUrl}" alt="${vivo.name}" class="battle-sprite-img ${spriteFlipCls}" title="${vivo.name}"/>`
+      ? `<img src="${spriteUrl}" alt="${vivo.name}" class="battle-sprite-img ${spriteFlipCls}" title="${vivo.name}" style="max-width:60px;max-height:54px;object-fit:contain;image-rendering:pixelated;display:block;"/>`
       : `<div class="fs-name">${vivo.name}</div>`}
     <div class="fs-hp-bar-bg"><div class="fs-hp-bar" id="${who}-hp-bar-${pos}" style="width:${pct}%;background:${hpColor}"></div></div>
-    <div class="fs-lp" id="${who}-lp-${pos}">${lp} / ${maxLp} LP</div>
+    <div class="fs-lp" id="${who}-lp-${pos}">${lp} / ${maxLp}</div>
     <div class="fs-stat-block" id="${who}-statblock-${pos}">
       <div class="fs-stat-row">
         <div class="fs-stat"><span class="sv">${dispAtk}</span><span class="sk">ATK</span></div>
@@ -2490,11 +2485,20 @@ socket.on('opponent_rotated', ({ azSlots, szSlots }) => {
   oppBattleState.azSlots = azSlots;
   oppBattleState.szSlots = szSlots;
 
-  // Fade out, re-render with correct mirroring, fade back in
   const oppSlotEls = document.querySelectorAll('[id^="opp-slot-"]');
   oppSlotEls.forEach(s => { s.style.transition = 'opacity .25s'; s.style.opacity = '0'; });
 
   setTimeout(() => {
+    // Clear opp slots preserving position styles
+    for (let i = 1; i <= 6; i++) {
+      const slot = document.getElementById(`opp-slot-${i}`);
+      const savedLeft = slot.style.left;
+      const savedTop  = slot.style.top;
+      slot.className = 'field-slot empty';
+      slot.innerHTML = '';
+      slot.style.left = savedLeft;
+      slot.style.top  = savedTop;
+    }
     renderField('opp', oppBattleState);
     attachStatHovers();
     setTimeout(() => {
@@ -2552,18 +2556,12 @@ let isAnimating = false;
 function rotate(dir, steps) {
   if (isAnimating || !myBattleState) return;
   isAnimating = true;
-
-  // Disable rotation buttons during animation
   setRotationButtons(false);
 
-  // Build current position map: posNum → vivoState (or null)
-  const posMap = {}; // pos → vivo
   const map = dir === 'ccw' ? CCW_MAP : CW_MAP;
 
-  // Collect all vivosaurs with their current positions
-  // We track positions in myBattleState
+  // Initialize posMap if needed
   if (!myBattleState.posMap) {
-    // Initialize position map — use direct references so currentLp updates persist through rotations
     myBattleState.posMap = {};
     const azCount = myBattleState.azSlots.length;
     const szCount = myBattleState.szSlots.length;
@@ -2573,21 +2571,20 @@ function rotate(dir, steps) {
     myBattleState.szSlots.forEach((v, i) => { v.zone = 'sz'; myBattleState.posMap[szPos[i]] = v; });
   }
 
-  // Apply N steps of rotation
-  let current = { ...myBattleState.posMap };
+  // Apply N steps — mutate zone in place, don't spread (preserve object references)
+  let current = { ...myBattleState.posMap }; // shallow copy of pos->vivo mapping
   for (let s = 0; s < steps; s++) {
     const next = {};
     for (const [pos, vivo] of Object.entries(current)) {
       const newPos = map[parseInt(pos)];
-      // Determine new zone based on new position
-      // Odd positions (1,3,5) = SZ, Even (2,4,6) = AZ
       const newZone = newPos % 2 === 0 ? 'az' : 'sz';
-      next[newPos] = { ...vivo, zone: newZone };
+      vivo.zone = newZone; // mutate zone on the original object
+      next[newPos] = vivo; // keep same object reference
     }
     current = next;
   }
 
-  // Animate: fade out → update → fade in
+  // Fade out
   const allSlots = document.querySelectorAll('[id^="your-slot-"]');
   allSlots.forEach(s => s.classList.add('rotating'));
 
@@ -2596,20 +2593,16 @@ function rotate(dir, steps) {
     myBattleState.posMap = current;
     myBattleState.azSlots = [];
     myBattleState.szSlots = [];
-    // Sort by position to fill slots in order
-    [2, 4, 6].forEach(pos => {
-      if (current[pos]) myBattleState.azSlots.push(current[pos]);
-    });
-    [1, 3, 5].forEach(pos => {
-      if (current[pos]) myBattleState.szSlots.push(current[pos]);
-    });
+    [2, 4, 6].forEach(pos => { if (current[pos]) myBattleState.azSlots.push(current[pos]); });
+    [1, 3, 5].forEach(pos => { if (current[pos]) myBattleState.szSlots.push(current[pos]); });
 
-    // Clear and re-render your side
+    // Clear slots — preserve position style (left/top %)
     for (let i = 1; i <= 6; i++) {
       const slot = document.getElementById(`your-slot-${i}`);
+      const savedStyle = slot.style.cssText;
       slot.className = 'field-slot empty';
+      slot.style.cssText = savedStyle;
       slot.innerHTML = '';
-      slot.classList.add('rotating');
     }
 
     // Place vivosaurs in new positions
@@ -2617,26 +2610,19 @@ function rotate(dir, steps) {
       fillSlot('your', parseInt(pos), vivo, vivo.zone);
       const slot = document.getElementById(`your-slot-${pos}`);
       slot.classList.add('rotating');
-      // Re-apply used-attacker class if this vivo already attacked this turn
-      if (usedAttackers.has(vivo.name)) {
-        slot.classList.add('used-attacker');
-      }
+      if (usedAttackers.has(vivo.name)) slot.classList.add('used-attacker');
     }
     attachStatHovers();
 
     // Fade back in
     setTimeout(() => {
-      document.querySelectorAll('[id^="your-slot-"]').forEach(s => {
-        s.classList.remove('rotating');
-      });
+      document.querySelectorAll('[id^="your-slot-"]').forEach(s => s.classList.remove('rotating'));
       isAnimating = false;
-      // Re-enable rotation buttons and end turn (always available on your turn)
       setRotationButtons(true);
       document.getElementById('end-turn-btn').disabled = false;
-      // If it's our turn, re-highlight selectable vivos
       if (myTurn) highlightSelectableVivos();
 
-      // Tell opponent about our rotation
+      // Tell opponent about rotation
       socket.emit('player_rotated', {
         azSlots: myBattleState.azSlots,
         szSlots: myBattleState.szSlots,
@@ -2693,6 +2679,7 @@ function removeVivo(who, pos) {
   slot.style.transition = 'opacity .5s';
   slot.style.opacity = '0';
   setTimeout(() => {
+    const posStyle = slot.style.left + ';top:' + slot.style.top; // keep position
     slot.className = 'field-slot empty';
     slot.innerHTML = '';
     slot.style.opacity = '';
