@@ -255,6 +255,7 @@
     }
     .lc-sprite { height: 48px; display: flex; align-items: center; justify-content: center; }
     .lc-sprite img { max-width: 56px; max-height: 46px; object-fit: contain; image-rendering: pixelated; }
+    .lc-sprite img.flip-h { transform: scaleX(-1); }
 
     /* Opponent panel on formation screen */
     .opp-formation-panel {
@@ -276,6 +277,8 @@
       width: 90px; text-align: center; position: relative; cursor: default;
     }
     .opp-vivo-card .lc-sprite { height: 44px; }
+    .opp-vivo-card .lc-sprite img { max-width: 52px; max-height: 44px; object-fit: contain; image-rendering: pixelated; }
+    .opp-vivo-card .lc-sprite img.flip-h { transform: scaleX(-1); }
     .opp-vivo-card .lc-name { font-size: .68rem; font-weight: 600; color: var(--text); line-height: 1.2; }
     .opp-vivo-card .lc-type { font-size: .6rem; color: var(--muted); }
     .lineup-card:active { cursor: grabbing; opacity: .7; }
@@ -629,6 +632,7 @@
     .tier-vivo-card:hover { border-color: rgba(255,255,255,.3); filter: brightness(1.15); }
     .tier-vivo-card .tv-sprite { height: 44px; display: flex; align-items: center; justify-content: center; }
     .tier-vivo-card .tv-sprite img { max-width: 52px; max-height: 42px; object-fit: contain; image-rendering: pixelated; }
+    .tier-vivo-card .tv-sprite img.flip-h { transform: scaleX(-1); }
     .tier-vivo-card .tv-name { font-size: .68rem; font-weight: 600; color: var(--text); line-height: 1.2; }
     .tier-vivo-card .tv-num { font-size: .58rem; color: var(--muted); }
 
