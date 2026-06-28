@@ -1810,12 +1810,18 @@ function renderLineup() {
       const fromIdx = parseInt(e.dataTransfer.getData('text/plain'));
       const toIdx   = i;
       if (fromIdx === toIdx) return;
-      // Swap
       const tmp = formationOrder[fromIdx];
       formationOrder[fromIdx] = formationOrder[toIdx];
       formationOrder[toIdx]   = tmp;
       renderLineup();
     });
+
+    // Hover to show stats (only if vivo exists)
+    if (vivo) {
+      card.addEventListener('mouseenter', (e) => showVivoHoverCard(vivo, e));
+      card.addEventListener('mousemove',  (e) => positionHoverCard(e));
+      card.addEventListener('mouseleave', () => hideVivoHoverCard());
+    }
 
     container.appendChild(card);
   });
