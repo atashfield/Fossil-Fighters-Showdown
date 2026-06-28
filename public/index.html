@@ -823,6 +823,16 @@
                 <option value="yes">Has Link</option>
                 <option value="no">No Link</option>
               </select>
+              <select class="filter-select" id="filter-tier" onchange="applyFilters()">
+                <option value="">Tier</option>
+                <option value="S+">S+ Tier</option>
+                <option value="S">S Tier</option>
+                <option value="A">A Tier</option>
+                <option value="B">B Tier</option>
+                <option value="C">C Tier</option>
+                <option value="D">D Tier</option>
+                <option value="F">F Tier</option>
+              </select>
             </div>
             <div class="filter-active-tags" id="filter-tags"></div>
 
@@ -1140,6 +1150,7 @@ function renderVivoGrid() {
   const supStat   = document.getElementById('filter-support-stat')?.value || '';
   const supDir    = document.getElementById('filter-support-dir')?.value || '';
   const linkFilter    = document.getElementById('filter-link')?.value || '';
+  const tierFilter    = document.getElementById('filter-tier')?.value || '';
   const passiveFilter = document.getElementById('filter-passive')?.value || '';
   const sortBy    = document.getElementById('sort-by')?.value || 'name';
   const sortDir   = document.getElementById('sort-dir')?.value || 'asc';
@@ -1168,6 +1179,8 @@ function renderVivoGrid() {
         }
       }
     }
+    // Tier filter
+    if (tierFilter && v.tier !== tierFilter) return false;
     // Passive filter
     if (passiveFilter && v.ability !== passiveFilter) return false;
     // Link filter
@@ -1415,6 +1428,7 @@ function clearAllFilters() {
   document.getElementById('filter-support-dir').style.display = 'none';
   document.getElementById('filter-passive').value = '';
   document.getElementById('filter-link').value = '';
+  document.getElementById('filter-tier').value = '';
   document.getElementById('sort-by').value = 'number';
   document.getElementById('sort-dir').value = 'asc';
   applyFilters();
@@ -1431,6 +1445,7 @@ function updateFilterTags() {
   const supDir    = document.getElementById('filter-support-dir')?.value;
   const linkFilter    = document.getElementById('filter-link')?.value;
   const passiveFilter = document.getElementById('filter-passive')?.value;
+  const tierFilter    = document.getElementById('filter-tier')?.value;
   const search  = document.getElementById('vivo-search')?.value?.trim();
 
   if (type)   active.push({ label: `Type: ${type}`,  clear: () => { document.getElementById('filter-type').value = ''; applyFilters(); } });
@@ -1448,6 +1463,7 @@ function updateFilterTags() {
       applyFilters();
     }});
   }
+  if (tierFilter) active.push({ label: `Tier: ${tierFilter}`, clear: () => { document.getElementById('filter-tier').value = ''; applyFilters(); } });
   if (passiveFilter) active.push({ label: `Passive: ${passiveFilter}`, clear: () => { document.getElementById('filter-passive').value = ''; applyFilters(); } });
   if (linkFilter) active.push({ label: linkFilter === 'yes' ? 'Has Link' : 'No Link', clear: () => { document.getElementById('filter-link').value = ''; applyFilters(); } });
   if (search) active.push({ label: `"${search}"`, clear: () => { document.getElementById('vivo-search').value = ''; applyFilters(); } });
