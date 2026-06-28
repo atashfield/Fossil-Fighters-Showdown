@@ -2489,7 +2489,6 @@ function renderMoveButtons(moves) {
     if (canAfford) btn.onclick = () => selectMove(move);
     area.appendChild(btn);
   });
-  });
   if (moves.length > 0) {
     const cancel = document.createElement('button');
     cancel.className = 'move-btn';
