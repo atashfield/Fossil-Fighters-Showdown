@@ -599,6 +599,39 @@
     .battle-log p.sys { color: var(--muted); font-style: italic; }
 
     /* Spinner */
+    /* Tier List */
+    .tier-section { margin-bottom: 28px; }
+    .tier-header {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 10px; padding-bottom: 6px;
+      border-bottom: 2px solid;
+    }
+    .tier-badge-large {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.6rem; letter-spacing: .05em;
+      width: 52px; height: 52px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; border: 2px solid;
+    }
+    .tier-label { font-size: .72rem; color: var(--muted); }
+    .tier-count { font-size: .72rem; color: var(--muted); margin-left: auto; }
+    .tier-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 6px;
+    }
+    .tier-vivo-card {
+      background: var(--sidebar); border: 1px solid var(--border);
+      border-radius: 8px; padding: 8px 6px;
+      display: flex; flex-direction: column; align-items: center;
+      gap: 3px; cursor: pointer; transition: all .15s; text-align: center;
+    }
+    .tier-vivo-card:hover { border-color: rgba(255,255,255,.3); filter: brightness(1.15); }
+    .tier-vivo-card .tv-sprite { height: 44px; display: flex; align-items: center; justify-content: center; }
+    .tier-vivo-card .tv-sprite img { max-width: 52px; max-height: 42px; object-fit: contain; image-rendering: pixelated; }
+    .tier-vivo-card .tv-name { font-size: .68rem; font-weight: 600; color: var(--text); line-height: 1.2; }
+    .tier-vivo-card .tv-num { font-size: .58rem; color: var(--muted); }
+
     .spinner { width: 44px; height: 44px; border: 4px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 20px auto; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
@@ -728,6 +761,7 @@
     <button class="sidebar-btn active" id="nav-home" onclick="showPanel('home')"><span class="icon">🏠</span> Home</button>
     <button class="sidebar-btn" id="nav-battle" onclick="showPanel('battle')"><span class="icon">⚔️</span> Battle</button>
     <button class="sidebar-btn" id="nav-teambuilder" onclick="showPanel('teambuilder')"><span class="icon">🦕</span> Team Builder</button>
+    <button class="sidebar-btn" id="nav-tierlist" onclick="showPanel('tierlist')"><span class="icon">🏆</span> Tier List</button>
     <div class="sidebar-divider"></div>
     <button class="sidebar-btn" onclick="openChatModal()"><span class="icon">💬</span> Chat</button>
   </div>
@@ -881,6 +915,13 @@
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- TIER LIST -->
+    <div class="panel" id="panel-tierlist">
+      <div class="panel-title">🏆 Tier List</div>
+      <p style="font-size:.82rem;color:var(--muted);margin-bottom:16px">All vivosaurs ranked from best to worst. Hover any to see their stats.</p>
+      <div id="tier-list-content"></div>
     </div>
 
   </div>
@@ -1165,6 +1206,7 @@ function showPanel(name) {
   const navBtn = document.getElementById('nav-' + name);
   if (navBtn) navBtn.classList.add('active');
   if (name === 'battle') refreshBattlePanel();
+  if (name === 'tierlist') renderTierList();
 }
 
 // ════════════════════════════════════════
@@ -2065,8 +2107,74 @@ let usedAttackers    = new Set();
 let attackPending    = false; // prevents spam-clicking before server confirms
 
 // ════════════════════════════════════════
-//  CONFIRMATION POPUP
+//  TIER LIST
 // ════════════════════════════════════════
+const TIER_ORDER = ['S+', 'S', 'A', 'B', 'C', 'D', 'F'];
+const TIER_COLORS = {
+  'S+': { hex:'#ff4444', rgb:'255,68,68' },
+  'S':  { hex:'#ff7700', rgb:'255,119,0' },
+  'A':  { hex:'#ffcc00', rgb:'255,204,0' },
+  'B':  { hex:'#44cc44', rgb:'68,204,68' },
+  'C':  { hex:'#4488ff', rgb:'68,136,255' },
+  'D':  { hex:'#aa88ff', rgb:'170,136,255' },
+  'F':  { hex:'#888888', rgb:'136,136,136' },
+};
+
+function renderTierList() {
+  const container = document.getElementById('tier-list-content');
+  if (!container) return;
+  container.innerHTML = '';
+
+  TIER_ORDER.forEach(tier => {
+    const vivosByTier = VIVOSAURS.filter(v => v.tier === tier);
+    if (!vivosByTier.length) return;
+
+    const tc = TIER_COLORS[tier] || { hex:'#888', rgb:'136,136,136' };
+
+    const section = document.createElement('div');
+    section.className = 'tier-section';
+
+    // Header
+    const header = document.createElement('div');
+    header.className = 'tier-header';
+    header.style.borderColor = tc.hex;
+    header.innerHTML = `
+      <div class="tier-badge-large" style="background:rgba(${tc.rgb},.15);border-color:${tc.hex};color:${tc.hex}">${tier}</div>
+      <div>
+        <div style="font-size:.9rem;font-weight:700;color:${tc.hex}">${tier} Tier</div>
+        <div class="tier-label">${vivosByTier.length} vivosaur${vivosByTier.length !== 1 ? 's' : ''}</div>
+      </div>`;
+    section.appendChild(header);
+
+    // Grid of vivosaurs
+    const grid = document.createElement('div');
+    grid.className = 'tier-grid';
+
+    vivosByTier.forEach(v => {
+      const spriteUrl = getSpriteUrl(v.name);
+      const flipCls   = getSpriteFlipClass(v.name, 'right');
+      const card = document.createElement('div');
+      card.className = 'tier-vivo-card';
+      card.style.borderColor = `rgba(${tc.rgb},.3)`;
+      card.style.background  = `linear-gradient(135deg, rgba(${tc.rgb},.12) 0%, rgba(${tc.rgb},.05) 100%), var(--sidebar)`;
+      card.innerHTML = `
+        <div class="tv-sprite">${spriteUrl
+          ? `<img src="${spriteUrl}" class="${flipCls}" style="max-width:52px;max-height:42px;object-fit:contain;image-rendering:pixelated"/>`
+          : ''}</div>
+        <div class="tv-name">${v.name}</div>
+        <div class="tv-num">No.${v.number}</div>`;
+      card.addEventListener('mouseenter', (e) => showVivoHoverCard(v, e));
+      card.addEventListener('mousemove',  (e) => positionHoverCard(e));
+      card.addEventListener('mouseleave', () => hideVivoHoverCard());
+      grid.appendChild(card);
+    });
+
+    section.appendChild(grid);
+    container.appendChild(section);
+  });
+}
+
+
 let confirmAction = null; // function to call on Yes
 
 function showConfirm(title, msg, onYes) {
