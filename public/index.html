@@ -1081,9 +1081,21 @@
       <div class="move-area-prompt" id="move-prompt">Select one of your vivosaurs to attack.</div>
     </div>
 
-    <!-- Log -->
-    <div class="battle-log" id="battle-log">
-      <p class="sys">Battle log will appear here.</p>
+    <!-- FP display + Log row -->
+    <div style="display:flex;gap:10px;align-items:flex-end;flex-shrink:0">
+      <div id="fp-display" style="
+        background:var(--panel);border:1px solid var(--border);border-radius:8px;
+        padding:8px 14px;font-family:'Bebas Neue',sans-serif;letter-spacing:.05em;
+        font-size:1.1rem;color:var(--accent);white-space:nowrap;flex-shrink:0;
+        display:flex;flex-direction:column;align-items:center;gap:1px;min-width:80px;
+      ">
+        <span style="font-size:.55rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-family:'Inter',sans-serif">Your FP</span>
+        <span id="fp-value">0</span>
+      </div>
+      <!-- Log -->
+      <div class="battle-log" id="battle-log" style="flex:1">
+        <p class="sys">Battle log will appear here.</p>
+      </div>
     </div>
   </div>
 
@@ -1912,6 +1924,7 @@ socket.on('battle_start', ({ yourFormation, oppFormation, yourState, oppState, y
   myBattleState  = yourState;
   oppBattleState = oppState;
   myTurn = yourTurn;
+  resetFP();
 
   document.getElementById('b-opponent-name').textContent = opponentName;
   document.getElementById('your-side-label').textContent = currentUsername;
@@ -2109,6 +2122,8 @@ let selectedAttacker = null;
 let selectedMove     = null;
 let usedAttackers    = new Set();
 let attackPending    = false; // prevents spam-clicking before server confirms
+let myFP             = 0;    // accumulated FP
+const FP_PER_TURN    = 230;
 
 // ════════════════════════════════════════
 //  TIER LIST
@@ -2276,6 +2291,7 @@ function closeBattle() {
   // Reset battle state
   myBattleState = null; oppBattleState = null;
   myTurn = false; attackPending = false;
+  resetFP();
   usedAttackers.clear();
   selectedAttacker = null; selectedMove = null;
   attackPhase = 'idle';
@@ -2291,6 +2307,10 @@ function enterMyTurn() {
   attackPhase = 'idle';
   selectedAttacker = null;
   selectedMove = null;
+  // Gain FP at start of turn
+  myFP += FP_PER_TURN;
+  updateFPDisplay();
+  battleLog(`💫 +${FP_PER_TURN} FP — Total: ${myFP} FP`, 'sys');
   setRotationButtons(true);
   document.getElementById('end-turn-btn').disabled = false;
   showMovePrompt('Select one of your vivosaurs to attack.');
@@ -2436,18 +2456,26 @@ function renderMoveButtons(moves) {
     const btn = document.createElement('button');
     btn.className = 'move-btn';
     const catClass = (move.category || 'standard').toLowerCase();
+    const canAfford = (move.fp === null || move.fp === undefined || myFP >= move.fp);
     const dmgStr = move.power ? `DMG ${move.power}` : '';
-    const fpStr  = move.fp   ? `FP ${move.fp}`    : '';
+    const fpStr  = move.fp != null ? `FP ${move.fp}` : '';
     const subParts = [dmgStr, fpStr].filter(Boolean).join(' · ');
+    if (!canAfford) {
+      btn.disabled = true;
+      btn.style.opacity = '.35';
+      btn.title = `Need ${move.fp} FP (you have ${myFP})`;
+    }
     btn.innerHTML = `
       <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
         <span>${move.name}</span>
         <span class="vhc-move-cat ${catClass}" style="font-size:.58rem;padding:1px 5px">${move.category}</span>
+        ${!canAfford ? `<span style="font-size:.6rem;color:var(--accent2);margin-left:auto">Need ${move.fp} FP</span>` : ''}
       </div>
       ${subParts ? `<div class="move-sub">${subParts}</div>` : ''}
       ${move.effect ? `<div class="move-sub" style="font-style:italic;margin-top:2px">${move.effect}</div>` : ''}`;
-    btn.onclick = () => selectMove(move);
+    if (canAfford) btn.onclick = () => selectMove(move);
     area.appendChild(btn);
+  });
   });
   if (moves.length > 0) {
     const cancel = document.createElement('button');
@@ -2636,6 +2664,7 @@ function confirmAttack(targetPos) {
   socket.emit('send_move', {
     moveName: selectedMove.name,
     movePower: calcResult.damage,
+    moveFP: selectedMove.fp ?? 0,
     isCrit: calcResult.isCrit,
     elemMult: calcResult.elemMult,
     tiles: calcResult.tiles,
@@ -2643,6 +2672,11 @@ function confirmAttack(targetPos) {
     attackerPos: selectedAttacker.pos,
     targetName, targetPos,
   });
+  // Deduct FP immediately
+  if (selectedMove.fp) {
+    myFP = Math.max(0, myFP - selectedMove.fp);
+    updateFPDisplay();
+  }
 }
 
 socket.on('your_move_sent', ({ moveName, movePower, isCrit, elemMult, attackerName, attackerPos, targetName }) => {
