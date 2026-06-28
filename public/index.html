@@ -314,19 +314,34 @@
     /* ── IMAGE-BASED BATTLE FIELD ── */
     .battle-field {
       position: relative; flex: 1;
-      background: url('/field.png') center/contain no-repeat;
-      background-color: #1a100a;
-      border-radius: 10px; overflow: visible;
+      display: flex; align-items: center; justify-content: center;
+      background: #1a100a;
+      border-radius: 10px; overflow: hidden;
       min-height: 0;
     }
-    .field-side-label {
-      position: absolute; top: 6px;
-      font-size: .62rem; text-transform: uppercase; letter-spacing: .1em;
-      color: rgba(255,255,255,.8); text-shadow: 0 1px 3px rgba(0,0,0,.9);
-      background: rgba(0,0,0,.4); padding: 2px 8px; border-radius: 8px; z-index: 5;
+    .battle-field-img {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      object-fit: contain;
+      border-radius: 10px;
+      pointer-events: none;
+      z-index: 0;
     }
-    #your-side-label { left: 6px; }
-    #opp-side-label  { right: 6px; }
+    /* Overlay container sits on top of the image, same size */
+    .battle-field-overlay {
+      position: absolute;
+      /* Will be set by JS to match actual displayed image dimensions */
+      z-index: 1;
+      pointer-events: none;
+    }
+    .field-side-label {
+      position: absolute; top: 4px;
+      font-size: .58rem; text-transform: uppercase; letter-spacing: .1em;
+      color: rgba(255,255,255,.85); text-shadow: 0 1px 3px rgba(0,0,0,.9);
+      background: rgba(0,0,0,.45); padding: 2px 7px; border-radius: 8px; z-index: 5;
+    }
+    #your-side-label { left: 4px; }
+    #opp-side-label  { right: 4px; }
 
     .field-slot {
       position: absolute; width: 70px; height: 70px;
@@ -901,24 +916,31 @@
     <!-- Field -->
     <!-- IMAGE-BASED BATTLE FIELD -->
     <div class="battle-field" id="battle-field-img">
-      <div class="field-side-label" id="your-side-label">You</div>
-      <div class="field-side-label" id="opp-side-label">Opponent</div>
+      <!-- Field background image -->
+      <img src="/field.png" class="battle-field-img" id="battle-field-bg" alt=""/>
 
-      <!-- YOUR SIDE: pos 1=SZ-Top, 2=AZ-Top, 3=SZ-Mid, 4=AZ-Mid, 5=SZ-Bot, 6=AZ-Bot -->
-      <div class="field-slot empty" id="your-slot-1" data-pos="1" style="left:20.1%;top:32.7%"></div>
-      <div class="field-slot empty" id="your-slot-2" data-pos="2" style="left:33.4%;top:24.7%"></div>
-      <div class="field-slot empty" id="your-slot-3" data-pos="3" style="left:18.1%;top:43.9%"></div>
-      <div class="field-slot empty" id="your-slot-4" data-pos="4" style="left:24.2%;top:44.6%"></div>
-      <div class="field-slot empty" id="your-slot-5" data-pos="5" style="left:20.1%;top:71.1%"></div>
-      <div class="field-slot empty" id="your-slot-6" data-pos="6" style="left:33.4%;top:71.1%"></div>
+      <!-- Overlay positioned to match the actual rendered image size (set by JS) -->
+      <div class="battle-field-overlay" id="battle-field-overlay">
+        <div class="field-side-label" id="your-side-label">You</div>
+        <div class="field-side-label" id="opp-side-label">Opponent</div>
 
-      <!-- OPPONENT SIDE: Opp AZ inner (left col), Opp SZ outer (right col) -->
-      <div class="field-slot empty" id="opp-slot-1" data-pos="1" style="left:63.6%;top:22.7%"></div>
-      <div class="field-slot empty" id="opp-slot-2" data-pos="2" style="left:75.5%;top:22.9%"></div>
-      <div class="field-slot empty" id="opp-slot-3" data-pos="3" style="left:60.7%;top:51.6%"></div>
-      <div class="field-slot empty" id="opp-slot-4" data-pos="4" style="left:83.7%;top:51.6%"></div>
-      <div class="field-slot empty" id="opp-slot-5" data-pos="5" style="left:62.8%;top:71.1%"></div>
-      <div class="field-slot empty" id="opp-slot-6" data-pos="6" style="left:81.1%;top:71.1%"></div>
+        <!-- YOUR SIDE: pos 1=SZ-Top, 2=AZ-Top, 3=SZ-Mid, 4=AZ-Mid, 5=SZ-Bot, 6=AZ-Bot -->
+        <!-- Positions are % of the actual field image (755x547) -->
+        <div class="field-slot empty" id="your-slot-1" data-pos="1" style="left:20.1%;top:32.7%"></div>
+        <div class="field-slot empty" id="your-slot-2" data-pos="2" style="left:33.4%;top:24.7%"></div>
+        <div class="field-slot empty" id="your-slot-3" data-pos="3" style="left:18.1%;top:43.9%"></div>
+        <div class="field-slot empty" id="your-slot-4" data-pos="4" style="left:24.2%;top:44.6%"></div>
+        <div class="field-slot empty" id="your-slot-5" data-pos="5" style="left:20.1%;top:71.1%"></div>
+        <div class="field-slot empty" id="your-slot-6" data-pos="6" style="left:33.4%;top:71.1%"></div>
+
+        <!-- OPPONENT SIDE -->
+        <div class="field-slot empty" id="opp-slot-1" data-pos="1" style="left:63.6%;top:22.7%"></div>
+        <div class="field-slot empty" id="opp-slot-2" data-pos="2" style="left:75.5%;top:22.9%"></div>
+        <div class="field-slot empty" id="opp-slot-3" data-pos="3" style="left:60.7%;top:51.6%"></div>
+        <div class="field-slot empty" id="opp-slot-4" data-pos="4" style="left:83.7%;top:51.6%"></div>
+        <div class="field-slot empty" id="opp-slot-5" data-pos="5" style="left:62.8%;top:71.1%"></div>
+        <div class="field-slot empty" id="opp-slot-6" data-pos="6" style="left:81.1%;top:71.1%"></div>
+      </div>
     </div>
 
     <!-- Turn status -->
@@ -1755,6 +1777,7 @@ socket.on('battle_start', ({ yourFormation, oppFormation, yourState, oppState, y
   renderField('your', yourState);
   renderField('opp', oppState);
   attachStatHovers();
+  syncFieldOverlayWhenReady();
 
   document.getElementById('turn-bar').textContent = yourTurn
     ? '⚔️ Your turn — pick a move!'
@@ -2537,8 +2560,45 @@ function endBattle(won) {
 }
 
 // ════════════════════════════════════════
-//  ROTATION
+//  FIELD OVERLAY SYNC
 // ════════════════════════════════════════
+// The field image uses object-fit:contain so it may letterbox.
+// We position the overlay to exactly match the rendered image area.
+function syncFieldOverlay() {
+  const img = document.getElementById('battle-field-bg');
+  const overlay = document.getElementById('battle-field-overlay');
+  if (!img || !overlay) return;
+
+  const container = img.parentElement.getBoundingClientRect();
+  const natW = img.naturalWidth  || 755;
+  const natH = img.naturalHeight || 547;
+  const scale = Math.min(container.width / natW, container.height / natH);
+  const dispW = natW * scale;
+  const dispH = natH * scale;
+  const offsetX = (container.width  - dispW) / 2;
+  const offsetY = (container.height - dispH) / 2;
+
+  overlay.style.left   = offsetX + 'px';
+  overlay.style.top    = offsetY + 'px';
+  overlay.style.width  = dispW + 'px';
+  overlay.style.height = dispH + 'px';
+  overlay.style.pointerEvents = 'auto';
+}
+
+// Sync on load and resize
+window.addEventListener('resize', syncFieldOverlay);
+
+function syncFieldOverlayWhenReady() {
+  const img = document.getElementById('battle-field-bg');
+  if (!img) return;
+  if (img.complete && img.naturalWidth) {
+    syncFieldOverlay();
+  } else {
+    img.addEventListener('load', syncFieldOverlay);
+  }
+}
+
+
 // The 6 positions in CCW order (vivosaurs move UP in SZ, DOWN in AZ when CCW):
 // Counterclockwise step: each vivo moves to next in this sequence:
 //   SZ-Top(1) → SZ-Mid(3) → SZ-Bot(5) → AZ-Bot(6) → AZ-Mid(4) → AZ-Top(2) → SZ-Top(1)
