@@ -2196,6 +2196,19 @@ function renderTierList() {
 
 let confirmAction = null; // function to call on Yes
 
+// ════════════════════════════════════════
+//  FP SYSTEM
+// ════════════════════════════════════════
+function updateFPDisplay() {
+  const el = document.getElementById('fp-value');
+  if (el) el.textContent = myFP;
+}
+
+function resetFP() {
+  myFP = 0;
+  updateFPDisplay();
+}
+
 function showConfirm(title, msg, onYes) {
   confirmAction = onYes;
   document.getElementById('confirm-title').textContent = title;
