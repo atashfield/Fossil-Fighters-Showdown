@@ -314,9 +314,10 @@
     /* ── IMAGE-BASED BATTLE FIELD ── */
     .battle-field {
       position: relative; flex: 1;
-      background: url('/field.png') center/cover no-repeat;
+      background: url('/field.png') center/contain no-repeat;
+      background-color: #1a100a;
       border-radius: 10px; overflow: visible;
-      min-height: 260px;
+      min-height: 0;
     }
     .field-side-label {
       position: absolute; top: 6px;
@@ -904,20 +905,20 @@
       <div class="field-side-label" id="opp-side-label">Opponent</div>
 
       <!-- YOUR SIDE: pos 1=SZ-Top, 2=AZ-Top, 3=SZ-Mid, 4=AZ-Mid, 5=SZ-Bot, 6=AZ-Bot -->
-      <div class="field-slot empty" id="your-slot-1" data-pos="1" style="left:18.5%;top:25.6%"></div>
-      <div class="field-slot empty" id="your-slot-2" data-pos="2" style="left:29.1%;top:25.6%"></div>
-      <div class="field-slot empty" id="your-slot-3" data-pos="3" style="left:18.5%;top:41.1%"></div>
-      <div class="field-slot empty" id="your-slot-4" data-pos="4" style="left:29.1%;top:41.1%"></div>
-      <div class="field-slot empty" id="your-slot-5" data-pos="5" style="left:18.5%;top:56.7%"></div>
-      <div class="field-slot empty" id="your-slot-6" data-pos="6" style="left:29.1%;top:56.7%"></div>
+      <div class="field-slot empty" id="your-slot-1" data-pos="1" style="left:20.1%;top:32.7%"></div>
+      <div class="field-slot empty" id="your-slot-2" data-pos="2" style="left:33.4%;top:24.7%"></div>
+      <div class="field-slot empty" id="your-slot-3" data-pos="3" style="left:18.1%;top:43.9%"></div>
+      <div class="field-slot empty" id="your-slot-4" data-pos="4" style="left:24.2%;top:44.6%"></div>
+      <div class="field-slot empty" id="your-slot-5" data-pos="5" style="left:20.1%;top:71.1%"></div>
+      <div class="field-slot empty" id="your-slot-6" data-pos="6" style="left:33.4%;top:71.1%"></div>
 
-      <!-- OPPONENT SIDE: Opp AZ closer to center, Opp SZ outer right -->
-      <div class="field-slot empty" id="opp-slot-1" data-pos="1" style="left:70.2%;top:25.6%"></div>
-      <div class="field-slot empty" id="opp-slot-2" data-pos="2" style="left:80.8%;top:25.6%"></div>
-      <div class="field-slot empty" id="opp-slot-3" data-pos="3" style="left:70.2%;top:41.1%"></div>
-      <div class="field-slot empty" id="opp-slot-4" data-pos="4" style="left:80.8%;top:41.1%"></div>
-      <div class="field-slot empty" id="opp-slot-5" data-pos="5" style="left:70.2%;top:56.7%"></div>
-      <div class="field-slot empty" id="opp-slot-6" data-pos="6" style="left:80.8%;top:56.7%"></div>
+      <!-- OPPONENT SIDE: Opp AZ inner (left col), Opp SZ outer (right col) -->
+      <div class="field-slot empty" id="opp-slot-1" data-pos="1" style="left:63.6%;top:22.7%"></div>
+      <div class="field-slot empty" id="opp-slot-2" data-pos="2" style="left:75.5%;top:22.9%"></div>
+      <div class="field-slot empty" id="opp-slot-3" data-pos="3" style="left:60.7%;top:51.6%"></div>
+      <div class="field-slot empty" id="opp-slot-4" data-pos="4" style="left:83.7%;top:51.6%"></div>
+      <div class="field-slot empty" id="opp-slot-5" data-pos="5" style="left:62.8%;top:71.1%"></div>
+      <div class="field-slot empty" id="opp-slot-6" data-pos="6" style="left:81.1%;top:71.1%"></div>
     </div>
 
     <!-- Turn status -->
