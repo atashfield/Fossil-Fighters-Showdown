@@ -127,7 +127,7 @@
     .vc-sprite { display: flex; justify-content: center; margin-bottom: 4px; height: 52px; align-items: center; }
     .vivo-sprite-img { max-width: 64px; max-height: 52px; object-fit: contain; image-rendering: pixelated; }
     .vivo-sprite-img.flip-h { transform: scaleX(-1); }
-    .battle-sprite-img { max-width: 64px; max-height: 52px; object-fit: contain; image-rendering: pixelated; display: block; margin: 0 auto 2px; }
+    .battle-sprite-img { width: 100%; height: 70%; object-fit: contain; image-rendering: pixelated; display: block; }
     .battle-sprite-img.flip-h { transform: scaleX(-1); }
 
     .vivo-card .vc-name { font-size: .72rem; font-weight: 600; color: var(--text); margin-bottom: 2px; line-height: 1.2; }
@@ -344,7 +344,9 @@
     #opp-side-label  { right: 4px; }
 
     .field-slot {
-      position: absolute; width: 70px; height: 70px;
+      position: absolute;
+      width: 9.3%;   /* % of overlay width = scales with field */
+      height: 12.8%; /* % of overlay height */
       transform: translate(-50%, -50%);
       display: flex; flex-direction: column;
       align-items: center; justify-content: flex-end;
@@ -353,15 +355,16 @@
     }
     .field-slot.empty { pointer-events: none; }
     .field-slot.occupied-az, .field-slot.occupied-sz { cursor: pointer; }
-    .fs-name { font-size: .6rem; font-weight: 700; color: #fff;
+    .fs-name { font-size: clamp(.45rem, 1vw, .65rem); font-weight: 700; color: #fff;
       text-shadow: 0 1px 4px rgba(0,0,0,1); line-height: 1; text-align: center;
-      background: rgba(0,0,0,.45); padding: 1px 4px; border-radius: 3px; }
-    .fs-hp-bar-bg { width: 52px; background: rgba(0,0,0,.5); border-radius: 3px;
+      background: rgba(0,0,0,.45); padding: 1px 3px; border-radius: 3px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .fs-hp-bar-bg { width: 80%; background: rgba(0,0,0,.5); border-radius: 3px;
       height: 5px; overflow: hidden; margin-top: 2px; }
     .fs-hp-bar { height: 100%; border-radius: 3px; transition: width .4s, background .4s; }
-    .fs-lp { font-size: .52rem; color: rgba(255,255,255,.85);
+    .fs-lp { font-size: clamp(.4rem, .85vw, .58rem); color: rgba(255,255,255,.85);
       text-shadow: 0 1px 3px rgba(0,0,0,1); background: rgba(0,0,0,.4);
-      padding: 0 3px; border-radius: 2px; }
+      padding: 0 2px; border-radius: 2px; white-space: nowrap; }
 
     .field-slot.selectable { cursor: pointer; }
     .field-slot.selected-attacker { filter: drop-shadow(0 0 10px rgba(196,163,90,1)) brightness(1.2); }
@@ -382,10 +385,10 @@
     .fs-stat-block {
       display: none;
       position: absolute;
-      left: calc(100% + 6px);
+      left: calc(100% + 4px);
       top: 50%;
       transform: translateY(-50%);
-      width: 160px;
+      width: clamp(120px, 20vw, 170px);
       background: rgba(15,25,45,0.95);
       border: 1px solid rgba(196,163,90,.4);
       border-radius: 8px;
@@ -1911,7 +1914,7 @@ function fillSlot(who, pos, vivo, zone) {
 
   slot.innerHTML = `
     ${spriteUrl
-      ? `<img src="${spriteUrl}" alt="${vivo.name}" class="battle-sprite-img ${spriteFlipCls}" title="${vivo.name}" style="max-width:60px;max-height:54px;object-fit:contain;image-rendering:pixelated;display:block;"/>`
+      ? `<img src="${spriteUrl}" alt="${vivo.name}" class="battle-sprite-img ${spriteFlipCls}" title="${vivo.name}" />`
       : `<div class="fs-name">${vivo.name}</div>`}
     <div class="fs-hp-bar-bg"><div class="fs-hp-bar" id="${who}-hp-bar-${pos}" style="width:${pct}%;background:${hpColor}"></div></div>
     <div class="fs-lp" id="${who}-lp-${pos}">${lp} / ${maxLp}</div>
